@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">wakkt</string>
+    <string name="service_channel_name">Monitoring</string>
+    <string name="service_notification_title">wakkt is active</string>
+    <string name="service_notification_text">Showing your notes over selected apps</string>
+    <string name="service_special_use_reason">Detects when a selected app opens and shows a sticky-note label over it</string>
 </resources>
