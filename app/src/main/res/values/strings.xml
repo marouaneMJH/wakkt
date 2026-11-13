@@ -1,3 +1,59 @@
 <resources>
     <string name="app_name">wakkt</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Set up wakkt</string>
+    <string name="onboarding_subtitle">Two permissions let wakkt show your notes at the right moment.</string>
+    <string name="onboarding_overlay_title">Display over other apps</string>
+    <string name="onboarding_overlay_desc">Needed to draw your sticky note on top of the app you open.</string>
+    <string name="onboarding_usage_title">Usage access</string>
+    <string name="onboarding_usage_desc">Needed to know which app is in the foreground. Nothing leaves your phone.</string>
+    <string name="onboarding_grant">Grant</string>
+    <string name="onboarding_granted">Granted</string>
+    <string name="onboarding_continue">Continue</string>
+
+    <!-- App list -->
+    <string name="applist_title">Apps</string>
+    <string name="applist_settings">Settings</string>
+    <string name="applist_search">Search apps</string>
+    <string name="applist_clear">Clear search</string>
+    <string name="applist_empty">No apps found</string>
+
+    <!-- Editor -->
+    <string name="editor_title">Label</string>
+    <string name="editor_back">Back</string>
+    <string name="editor_text_label">Note</string>
+    <string name="editor_behavior">Behavior</string>
+    <string name="editor_behavior_sticky">Sticky</string>
+    <string name="editor_behavior_sticky_desc">Always shown, cannot be closed.</string>
+    <string name="editor_behavior_period">Closable for a period</string>
+    <string name="editor_behavior_period_desc">Close it and it comes back after a while.</string>
+    <string name="editor_behavior_forever">Closable forever</string>
+    <string name="editor_behavior_forever_desc">Close it once and it stays away.</string>
+    <string name="editor_period">Comes back after</string>
+    <string name="editor_period_15m">15 min</string>
+    <string name="editor_period_1h">1 h</string>
+    <string name="editor_period_4h">4 h</string>
+    <string name="editor_period_tomorrow">Until tomorrow</string>
+    <string name="editor_period_minutes">%1$d min</string>
+    <string name="editor_enabled">Enabled</string>
+    <string name="editor_preview">Preview</string>
+    <string name="editor_preview_placeholder">Your note appears here</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_delete_title">Delete this label?</string>
+    <string name="editor_delete_message">The note will no longer appear over this app.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_labels_on">Labels on</string>
+    <string name="settings_labels_on_desc">Turn off to hide all labels without deleting them.</string>
+    <string name="settings_battery">Battery optimization</string>
+    <string name="settings_battery_desc">Exempt wakkt so Android does not stop it in the background.</string>
+    <string name="settings_open">Open</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
 </resources>
