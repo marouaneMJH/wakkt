@@ -29,6 +29,12 @@ object LabelRules {
             .atStartOfDay(zone).toInstant().toEpochMilli()
 
     /** Preset periods offered in the editor (minutes). [UNTIL_TOMORROW] is resolved at dismiss time. */
-    val PERIOD_PRESETS = listOf(15, 60, 240, UNTIL_TOMORROW)
+    val PERIOD_PRESETS = listOf(5, 10, 15, 60, 240, UNTIL_TOMORROW)
     const val UNTIL_TOMORROW = -1
+
+    /** Longest custom period the user can pick: 7 days. */
+    const val MAX_CUSTOM_MINUTES = 7 * 24 * 60
+
+    /** A preset, "until tomorrow", or a custom period of 1 minute to 7 days. */
+    fun isValidPeriod(minutes: Int): Boolean = minutes == UNTIL_TOMORROW || minutes in 1..MAX_CUSTOM_MINUTES
 }

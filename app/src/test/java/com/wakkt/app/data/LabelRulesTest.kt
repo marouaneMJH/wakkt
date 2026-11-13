@@ -88,4 +88,22 @@ class LabelRulesTest {
         assertFalse(LabelRules.shouldShow(r, now))
         assertTrue(LabelRules.shouldShow(r, r.snoozedUntil))
     }
+
+    @Test fun `custom period snoozes for exactly that long`() {
+        val now = 1_000_000L
+        val r = LabelRules.afterDismiss(label(snoozeMinutes = 45), now)
+        org.junit.Assert.assertEquals(now + 45 * 60_000L, r.snoozedUntil)
+        org.junit.Assert.assertFalse(LabelRules.shouldShow(r, now + 44 * 60_000L))
+        org.junit.Assert.assertTrue(LabelRules.shouldShow(r, now + 45 * 60_000L))
+    }
+
+    @Test fun `period validation accepts presets, custom and tomorrow only`() {
+        LabelRules.PERIOD_PRESETS.forEach { org.junit.Assert.assertTrue(LabelRules.isValidPeriod(it)) }
+        org.junit.Assert.assertTrue(LabelRules.isValidPeriod(5))
+        org.junit.Assert.assertTrue(LabelRules.isValidPeriod(10))
+        org.junit.Assert.assertTrue(LabelRules.isValidPeriod(LabelRules.MAX_CUSTOM_MINUTES))
+        org.junit.Assert.assertFalse(LabelRules.isValidPeriod(0))
+        org.junit.Assert.assertFalse(LabelRules.isValidPeriod(-5))
+        org.junit.Assert.assertFalse(LabelRules.isValidPeriod(LabelRules.MAX_CUSTOM_MINUTES + 1))
+    }
 }

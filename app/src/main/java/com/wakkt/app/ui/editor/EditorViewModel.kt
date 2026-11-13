@@ -130,7 +130,7 @@ class EditorViewModel @Inject constructor(
         packageName = packageName,
         text = s.text.trim(),
         behavior = s.behavior,
-        snoozeMinutes = if (s.snoozeMinutes in LabelRules.PERIOD_PRESETS) s.snoozeMinutes else 60,
+        snoozeMinutes = if (LabelRules.isValidPeriod(s.snoozeMinutes)) s.snoozeMinutes else 60,
         enabled = s.enabled,
         style = s.style,
         backdrop = s.backdrop,

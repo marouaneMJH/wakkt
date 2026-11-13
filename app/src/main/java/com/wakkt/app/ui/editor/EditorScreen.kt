@@ -31,6 +31,9 @@ import com.wakkt.app.overlay.StickyNote
 import com.wakkt.app.overlay.WindowOverlayController
 import com.wakkt.app.overlay.ChaosCanvas
 import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
@@ -93,6 +96,7 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    var customPeriodOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.finished) { if (state.finished) onBack() }
 
@@ -196,6 +200,18 @@ fun EditorScreen(
                                 label = { Text(periodLabel(minutes)) },
                             )
                         }
+                        val custom = state.snoozeMinutes !in LabelRules.PERIOD_PRESETS
+                        FilterChip(
+                            selected = custom,
+                            onClick = { customPeriodOpen = true },
+                            leadingIcon = { Icon(Icons.Rounded.Edit, null, Modifier.size(16.dp)) },
+                            label = {
+                                Text(
+                                    if (custom) stringResource(R.string.editor_period_custom_value, periodLabel(state.snoozeMinutes))
+                                    else stringResource(R.string.editor_period_custom),
+                                )
+                            },
+                        )
                     }
                 }
             }
@@ -240,6 +256,14 @@ fun EditorScreen(
         }
     }
 
+    if (customPeriodOpen) {
+        CustomPeriodDialog(
+            initialMinutes = state.snoozeMinutes.takeIf { it > 0 && it !in LabelRules.PERIOD_PRESETS } ?: 30,
+            onDismiss = { customPeriodOpen = false },
+            onConfirm = { customPeriodOpen = false; viewModel.onPeriodChange(it) },
+        )
+    }
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -260,12 +284,55 @@ fun EditorScreen(
 }
 
 @Composable
-private fun periodLabel(minutes: Int): String = when (minutes) {
-    15 -> stringResource(R.string.editor_period_15m)
-    60 -> stringResource(R.string.editor_period_1h)
-    240 -> stringResource(R.string.editor_period_4h)
-    LabelRules.UNTIL_TOMORROW -> stringResource(R.string.editor_period_tomorrow)
-    else -> stringResource(R.string.editor_period_minutes, minutes)
+private fun periodLabel(minutes: Int): String = when {
+    minutes == LabelRules.UNTIL_TOMORROW -> stringResource(R.string.editor_period_tomorrow)
+    minutes < 60 -> stringResource(R.string.editor_period_minutes, minutes)
+    minutes % 60 == 0 -> stringResource(R.string.editor_period_hours, minutes / 60)
+    else -> stringResource(R.string.editor_period_hours_minutes, minutes / 60, minutes % 60)
+}
+
+/** Lets the user pick any period from 1 minute to 7 days as hours + minutes. */
+@Composable
+private fun CustomPeriodDialog(initialMinutes: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
+    var hours by remember { mutableStateOf((initialMinutes / 60).toString()) }
+    var minutes by remember { mutableStateOf((initialMinutes % 60).toString()) }
+    val total = (hours.toIntOrNull() ?: 0) * 60 + (minutes.toIntOrNull() ?: 0)
+    val valid = total in 1..LabelRules.MAX_CUSTOM_MINUTES
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.editor_period_custom_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    NumberField(hours, { hours = it }, stringResource(R.string.editor_period_hours_label), Modifier.weight(1f))
+                    NumberField(minutes, { minutes = it }, stringResource(R.string.editor_period_minutes_label), Modifier.weight(1f))
+                }
+                Text(
+                    if (valid) stringResource(R.string.editor_period_custom_preview, periodLabel(total))
+                    else stringResource(R.string.editor_period_custom_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(total) }, enabled = valid) { Text(stringResource(R.string.editor_period_custom_set)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) } },
+    )
+}
+
+@Composable
+private fun NumberField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { v -> onChange(v.filter(Char::isDigit).take(4)) },
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier,
+    )
 }
 
 @Composable
