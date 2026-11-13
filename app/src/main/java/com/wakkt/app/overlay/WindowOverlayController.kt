@@ -2,11 +2,26 @@ package com.wakkt.app.overlay
 
 import android.content.Context
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,6 +39,8 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.wakkt.app.R
+import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.data.LabelEntity
 import com.wakkt.app.ui.theme.WakktTheme
@@ -54,38 +71,72 @@ private class OverlayLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner, V
     }
 }
 
+/**
+ * Two window modes:
+ * - COMPACT: small draggable note, the app underneath stays usable.
+ * - BACKDROP: full-screen layer that blurs/dims (or fully covers) the app, note centered.
+ *   It goes away when the note is closed; for STICKY labels a "Continue" button switches to COMPACT
+ *   for the rest of the visit so the user is never locked out of the app.
+ */
 @Singleton
 class WindowOverlayController @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : OverlayController {
+
+    private enum class Mode { COMPACT, BACKDROP }
 
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var view: ComposeView? = null
     private var owner: OverlayLifecycleOwner? = null
     private var params: WindowManager.LayoutParams? = null
+    private var mode: Mode? = null
 
-    private var text by mutableStateOf("")
-    private var closable by mutableStateOf(false)
+    private var label by mutableStateOf<LabelEntity?>(null)
     private var onClose: () -> Unit = {}
+    /** Package of the current visit, and whether the user chose "Continue" during it. */
+    private var visitPackage: String? = null
+    private var continued = false
 
     override val isShowing: Boolean get() = view != null
 
     override fun show(label: LabelEntity, onClose: () -> Unit) {
         if (!Settings.canDrawOverlays(context)) return
-        text = label.text
-        closable = label.behavior != LabelBehavior.STICKY
+        if (label.packageName != visitPackage) {
+            visitPackage = label.packageName
+            continued = false
+        }
+        this.label = label
         this.onClose = onClose
-        if (view != null) return
+        render()
+    }
+
+    override fun hide() {
+        removeView()
+        visitPackage = null
+        continued = false
+        label = null
+    }
+
+    private fun continueToApp() {
+        continued = true
+        render()
+    }
+
+    private fun render() {
+        val l = label ?: return
+        val desired = if (l.backdrop != Backdrop.NONE && !continued) Mode.BACKDROP else Mode.COMPACT
+        if (view != null && mode == desired) return // state change recomposes in place
+        removeView()
         try {
-            addView()
+            addView(desired)
         } catch (e: Exception) {
             // Permission revoked, bad window state, etc.: fail silently.
             cleanup()
         }
     }
 
-    override fun hide() {
+    private fun removeView() {
         val v = view ?: return
         try {
             windowManager.removeView(v)
@@ -100,20 +151,14 @@ class WindowOverlayController @Inject constructor(
         owner = null
         view = null
         params = null
+        mode = null
     }
 
-    private fun addView() {
-        val lp = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            val pos = lastPosition ?: defaultPosition()
-            x = pos.first
-            y = pos.second
+    private fun addView(target: Mode) {
+        val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && windowManager.isCrossWindowBlurEnabled
+        val lp = when (target) {
+            Mode.COMPACT -> compactParams()
+            Mode.BACKDROP -> backdropParams(label?.backdrop ?: Backdrop.HALF, blurSupported)
         }
         params = lp
 
@@ -125,26 +170,109 @@ class WindowOverlayController @Inject constructor(
             setViewTreeViewModelStoreOwner(o)
             setContent {
                 WakktTheme {
-                    StickyNote(
-                        text = text,
-                        closable = closable,
-                        onClose = { onClose() },
-                        modifier = Modifier.pointerInput(Unit) {
-                            detectDragGestures { change, drag ->
-                                change.consume()
-                                moveBy(drag.x.toInt(), drag.y.toInt())
-                            }
-                        },
-                    )
+                    val l = label ?: return@WakktTheme
+                    when (target) {
+                        Mode.COMPACT -> CompactNote(l)
+                        Mode.BACKDROP -> BackdropNote(l, blurSupported)
+                    }
                 }
             }
         }
         view = cv
+        mode = target
         windowManager.addView(cv, lp)
         o.resume()
     }
 
+    @androidx.compose.runtime.Composable
+    private fun CompactNote(l: LabelEntity) {
+        StickyNote(
+            text = l.text,
+            closable = l.behavior != LabelBehavior.STICKY,
+            onClose = { onClose() },
+            color = l.color,
+            style = l.style,
+            imagePath = l.imagePath,
+            modifier = Modifier.pointerInput(Unit) {
+                detectDragGestures { change, drag ->
+                    change.consume()
+                    moveBy(drag.x.toInt(), drag.y.toInt())
+                }
+            },
+        )
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun BackdropNote(l: LabelEntity, blurSupported: Boolean) {
+        val alpha = scrimAlpha(l.backdrop, blurSupported)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = alpha))
+                // Swallow taps so they don't reach the hidden app.
+                .pointerInput(Unit) { detectTapGestures { } }
+                .systemBarsPadding()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                StickyNote(
+                    text = l.text,
+                    closable = l.behavior != LabelBehavior.STICKY,
+                    onClose = { onClose() },
+                    color = l.color,
+                    style = l.style,
+                    imagePath = l.imagePath,
+                    maxWidth = 320.dp,
+                )
+                if (l.behavior == LabelBehavior.STICKY) {
+                    FilledTonalButton(onClick = ::continueToApp) {
+                        Text(stringResource(R.string.overlay_continue))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun compactParams() = WindowManager.LayoutParams(
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+        PixelFormat.TRANSLUCENT,
+    ).apply {
+        gravity = Gravity.TOP or Gravity.START
+        windowAnimations = android.R.style.Animation_Toast
+        val pos = lastPosition ?: defaultPosition()
+        x = pos.first
+        y = pos.second
+    }
+
+    private fun backdropParams(backdrop: Backdrop, blurSupported: Boolean) = WindowManager.LayoutParams(
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+        PixelFormat.TRANSLUCENT,
+    ).apply {
+        gravity = Gravity.CENTER
+        windowAnimations = android.R.style.Animation_Dialog
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        if (blurSupported && backdrop != Backdrop.FULL && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+            blurBehindRadius = (backdrop.strength * MAX_BLUR_DP * context.resources.displayMetrics.density).toInt()
+        }
+    }
+
     private fun moveBy(dx: Int, dy: Int) {
+        if (mode != Mode.COMPACT) return
         val v = view ?: return
         val lp = params ?: return
         val dm = context.resources.displayMetrics
@@ -169,9 +297,22 @@ class WindowOverlayController @Inject constructor(
         return ((screenW - noteW) / 2).coerceAtLeast(0) to statusBar + (8 * density).toInt()
     }
 
-    private companion object {
+    companion object {
+        private const val MAX_BLUR_DP = 40f
+
         /** Last dragged position, kept in memory for the process lifetime. */
         @Volatile
-        var lastPosition: Pair<Int, Int>? = null
+        private var lastPosition: Pair<Int, Int>? = null
+
+        /**
+         * Opacity of the backdrop tint. With real blur the tint can be lighter, since blur already
+         * hides detail; without blur (older phones, battery saver) the tint does all the hiding.
+         */
+        fun scrimAlpha(backdrop: Backdrop, blurSupported: Boolean): Float = when {
+            backdrop == Backdrop.NONE -> 0f
+            backdrop == Backdrop.FULL -> 1f
+            blurSupported -> backdrop.strength * 0.6f
+            else -> backdrop.strength
+        }
     }
 }

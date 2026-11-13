@@ -1,5 +1,6 @@
 package com.wakkt.app.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,4 +13,9 @@ data class LabelEntity(
     val snoozedUntil: Long = 0L,
     val dismissedForever: Boolean = false,
     val enabled: Boolean = true,
+    @ColumnInfo(defaultValue = "YELLOW") val color: NoteColor = NoteColor.YELLOW,
+    @ColumnInfo(defaultValue = "CLASSIC") val style: NoteStyle = NoteStyle.CLASSIC,
+    @ColumnInfo(defaultValue = "NONE") val backdrop: Backdrop = Backdrop.NONE,
+    /** Absolute path of an image copied into app storage by [NoteImageStore], or null. */
+    val imagePath: String? = null,
 )

@@ -1,13 +1,18 @@
 package com.wakkt.app.ui.editor
 
+import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.data.LabelEntity
 import com.wakkt.app.data.LabelRepository
 import com.wakkt.app.data.LabelRules
+import com.wakkt.app.data.NoteColor
+import com.wakkt.app.data.NoteImageStore
+import com.wakkt.app.data.NoteStyle
 import com.wakkt.app.ui.applist.InstalledAppsSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -28,6 +33,12 @@ data class EditorState(
     val behavior: LabelBehavior = LabelBehavior.CLOSABLE_PERIOD,
     val snoozeMinutes: Int = 60,
     val enabled: Boolean = true,
+    val color: NoteColor = NoteColor.YELLOW,
+    val style: NoteStyle = NoteStyle.CLASSIC,
+    val backdrop: Backdrop = Backdrop.NONE,
+    val imagePath: String? = null,
+    val importingImage: Boolean = false,
+    val imageError: Boolean = false,
     val finished: Boolean = false,
 ) {
     val canSave: Boolean get() = text.isNotBlank()
@@ -38,6 +49,7 @@ class EditorViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: LabelRepository,
     private val apps: InstalledAppsSource,
+    private val images: NoteImageStore,
 ) : ViewModel() {
     private val packageName: String = checkNotNull(savedStateHandle["packageName"])
 
@@ -45,6 +57,9 @@ class EditorViewModel @Inject constructor(
     val state: StateFlow<EditorState> = _state.asStateFlow()
 
     private var original: LabelEntity? = null
+    /** Images imported in this session that may need deleting if not kept. */
+    private val importedImages = mutableSetOf<String>()
+    private var saved = false
 
     init {
         viewModelScope.launch {
@@ -60,6 +75,10 @@ class EditorViewModel @Inject constructor(
                 behavior = label?.behavior ?: LabelBehavior.CLOSABLE_PERIOD,
                 snoozeMinutes = label?.snoozeMinutes ?: 60,
                 enabled = label?.enabled ?: true,
+                color = label?.color ?: NoteColor.YELLOW,
+                style = label?.style ?: NoteStyle.CLASSIC,
+                backdrop = label?.backdrop ?: Backdrop.NONE,
+                imagePath = label?.imagePath,
             )
         }
     }
@@ -68,6 +87,23 @@ class EditorViewModel @Inject constructor(
     fun onBehaviorChange(value: LabelBehavior) = _state.update { it.copy(behavior = value) }
     fun onPeriodChange(minutes: Int) = _state.update { it.copy(snoozeMinutes = minutes) }
     fun onEnabledChange(value: Boolean) = _state.update { it.copy(enabled = value) }
+    fun onColorChange(value: NoteColor) = _state.update { it.copy(color = value) }
+    fun onStyleChange(value: NoteStyle) = _state.update { it.copy(style = value) }
+    fun onBackdropChange(value: Backdrop) = _state.update { it.copy(backdrop = value) }
+    fun onRemoveImage() = _state.update { it.copy(imagePath = null) }
+
+    fun onImagePicked(uri: Uri?) {
+        if (uri == null) return
+        _state.update { it.copy(importingImage = true, imageError = false) }
+        viewModelScope.launch {
+            val path = images.import(uri, packageName)
+            if (path != null) importedImages += path
+            _state.update {
+                if (path != null) it.copy(imagePath = path, importingImage = false)
+                else it.copy(importingImage = false, imageError = true)
+            }
+        }
+    }
 
     fun save() {
         val s = _state.value
@@ -86,8 +122,17 @@ class EditorViewModel @Inject constructor(
                     snoozedUntil = if (unchanged) old!!.snoozedUntil else 0L,
                     dismissedForever = if (unchanged) old!!.dismissedForever else false,
                     enabled = s.enabled,
+                    color = s.color,
+                    style = s.style,
+                    backdrop = s.backdrop,
+                    imagePath = s.imagePath,
                 ),
             )
+            saved = true
+            // Drop files that are no longer used: the replaced original and unused imports.
+            if (old?.imagePath != s.imagePath) images.delete(old?.imagePath)
+            (importedImages - setOfNotNull(s.imagePath)).forEach { images.delete(it) }
+            importedImages.clear()
             _state.update { it.copy(finished = true) }
         }
     }
@@ -95,7 +140,19 @@ class EditorViewModel @Inject constructor(
     fun delete() {
         viewModelScope.launch {
             repository.delete(packageName)
+            saved = true
+            images.delete(original?.imagePath)
+            importedImages.forEach { images.delete(it) }
+            importedImages.clear()
             _state.update { it.copy(finished = true) }
+        }
+    }
+
+    override fun onCleared() {
+        // Leaving without saving: discard images imported in this session.
+        if (!saved && importedImages.isNotEmpty()) {
+            importedImages.forEach(images::deleteNow)
+            importedImages.clear()
         }
     }
 }

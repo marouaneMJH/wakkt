@@ -1,5 +1,31 @@
 package com.wakkt.app.ui.editor
 
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.AddPhotoAlternate
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.wakkt.app.data.Backdrop
+import com.wakkt.app.data.NoteColor
+import com.wakkt.app.data.NoteStyle
+import com.wakkt.app.overlay.StickyNote
+import com.wakkt.app.overlay.WindowOverlayController
+import com.wakkt.app.overlay.palette
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -50,7 +76,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wakkt.app.R
 import com.wakkt.app.data.LabelBehavior
-import com.wakkt.app.overlay.StickyNote
 import com.wakkt.app.data.LabelRules
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -179,13 +204,11 @@ fun EditorScreen(
                 }
             }
 
+            LookSection(state, viewModel)
+
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.editor_preview), style = MaterialTheme.typography.titleSmall)
-                StickyNote(
-                    text = state.text.ifBlank { stringResource(R.string.editor_preview_placeholder) },
-                    closable = state.behavior != LabelBehavior.STICKY,
-                    onClose = {},
-                )
+                NotePreview(state)
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -246,3 +269,206 @@ private fun BehaviorOption(
         }
     }
 }
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun LookSection(state: EditorState, viewModel: EditorViewModel) {
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+        viewModel.onImagePicked(it)
+    }
+    val launchPicker = {
+        pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(stringResource(R.string.editor_look), style = MaterialTheme.typography.titleMedium)
+
+        // Color
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.editor_color), style = MaterialTheme.typography.titleSmall)
+            val dark = isSystemInDarkTheme()
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                NoteColor.entries.forEach { c ->
+                    val p = c.palette(dark)
+                    val selected = state.color == c
+                    val name = colorName(c)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(p.paper)
+                            .border(
+                                if (selected) 2.5.dp else 1.dp,
+                                if (selected) MaterialTheme.colorScheme.primary else p.accent.copy(alpha = 0.6f),
+                                CircleShape,
+                            )
+                            .selectable(selected = selected, role = Role.RadioButton) { viewModel.onColorChange(c) }
+                            .semantics { contentDescription = name },
+                    ) {
+                        if (selected) Icon(Icons.Rounded.Check, null, tint = p.ink, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+        }
+
+        // Style
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.editor_style), style = MaterialTheme.typography.titleSmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NoteStyle.entries.forEach { st ->
+                    FilterChip(
+                        selected = state.style == st,
+                        onClick = { viewModel.onStyleChange(st) },
+                        label = { Text(styleName(st)) },
+                    )
+                }
+            }
+        }
+
+        // Backdrop
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.editor_backdrop), style = MaterialTheme.typography.titleSmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Backdrop.entries.forEach { b ->
+                    FilterChip(
+                        selected = state.backdrop == b,
+                        onClick = { viewModel.onBackdropChange(b) },
+                        label = { Text(backdropName(b)) },
+                    )
+                }
+            }
+            if (state.backdrop != Backdrop.NONE) {
+                Text(
+                    stringResource(
+                        if (state.behavior == LabelBehavior.STICKY) R.string.editor_backdrop_hint_sticky
+                        else R.string.editor_backdrop_hint,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        // Image
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.editor_image), style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (state.imagePath == null) {
+                    OutlinedButton(onClick = launchPicker, enabled = !state.importingImage) {
+                        Icon(Icons.Rounded.AddPhotoAlternate, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.editor_image_add))
+                    }
+                } else {
+                    OutlinedButton(onClick = launchPicker, enabled = !state.importingImage) {
+                        Text(stringResource(R.string.editor_image_change))
+                    }
+                    TextButton(onClick = viewModel::onRemoveImage, enabled = !state.importingImage) {
+                        Text(stringResource(R.string.editor_image_remove))
+                    }
+                }
+                if (state.importingImage) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+            if (state.imageError) {
+                Text(
+                    stringResource(R.string.editor_image_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+/** The note over a mock app screen, showing how the backdrop will look. */
+@Composable
+private fun NotePreview(state: EditorState) {
+    val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val hasBackdrop = state.backdrop != Backdrop.NONE
+    val text = state.text.ifBlank { stringResource(R.string.editor_preview_placeholder) }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(if (hasBackdrop || state.imagePath != null) 340.dp else 220.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        // Mock app content.
+        val blur = if (hasBackdrop && blurSupported && state.backdrop != Backdrop.FULL) (state.backdrop.strength * 16).dp else 0.dp
+        Column(
+            Modifier.fillMaxSize().blur(blur).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            val bar = MaterialTheme.colorScheme.outlineVariant
+            repeat(3) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(32.dp).clip(CircleShape).background(bar))
+                    Spacer(Modifier.size(10.dp))
+                    Box(Modifier.height(10.dp).fillMaxWidth(0.5f).clip(RoundedCornerShape(5.dp)).background(bar))
+                }
+                Box(Modifier.height(56.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bar.copy(alpha = 0.6f)))
+            }
+        }
+        if (hasBackdrop) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme.colorScheme.background.copy(
+                            alpha = WindowOverlayController.scrimAlpha(state.backdrop, blurSupported),
+                        ),
+                    ),
+            )
+        }
+        Column(
+            Modifier.fillMaxSize().padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = if (hasBackdrop) Arrangement.Center else Arrangement.Top,
+        ) {
+            StickyNote(
+                text = text,
+                closable = state.behavior != LabelBehavior.STICKY,
+                onClose = {},
+                color = state.color,
+                style = state.style,
+                imagePath = state.imagePath,
+                maxWidth = 240.dp,
+            )
+            if (hasBackdrop && state.behavior == LabelBehavior.STICKY) {
+                FilledTonalButton(onClick = {}) { Text(stringResource(R.string.overlay_continue)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun colorName(c: NoteColor): String = stringResource(
+    when (c) {
+        NoteColor.YELLOW -> R.string.editor_color_yellow
+        NoteColor.PINK -> R.string.editor_color_pink
+        NoteColor.MINT -> R.string.editor_color_mint
+        NoteColor.SKY -> R.string.editor_color_sky
+        NoteColor.LAVENDER -> R.string.editor_color_lavender
+        NoteColor.PEACH -> R.string.editor_color_peach
+    },
+)
+
+@Composable
+private fun styleName(s: NoteStyle): String = stringResource(
+    when (s) {
+        NoteStyle.CLASSIC -> R.string.editor_style_classic
+        NoteStyle.SOFT -> R.string.editor_style_soft
+        NoteStyle.OUTLINE -> R.string.editor_style_outline
+    },
+)
+
+@Composable
+private fun backdropName(b: Backdrop): String = stringResource(
+    when (b) {
+        Backdrop.NONE -> R.string.editor_backdrop_none
+        Backdrop.HALF -> R.string.editor_backdrop_half
+        Backdrop.STRONG -> R.string.editor_backdrop_strong
+        Backdrop.FULL -> R.string.editor_backdrop_full
+    },
+)
