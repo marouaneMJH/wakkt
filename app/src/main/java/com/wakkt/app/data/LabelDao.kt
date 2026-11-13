@@ -15,6 +15,12 @@ interface LabelDao {
     @Query("SELECT * FROM labels WHERE packageName = :packageName LIMIT 1")
     suspend fun get(packageName: String): LabelEntity?
 
+    @Query("SELECT * FROM labels WHERE packageName = :packageName LIMIT 1")
+    fun observe(packageName: String): Flow<LabelEntity?>
+
+    @Query("DELETE FROM labels WHERE packageName = :packageName")
+    suspend fun deleteByPackage(packageName: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(label: LabelEntity)
 
