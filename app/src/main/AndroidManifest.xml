@@ -7,17 +7,19 @@
     <!-- Detect which app is in the foreground (user grants "Usage access") -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-    <!-- List installed apps in the picker -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
     <!-- Keep the monitoring service alive -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Optional vibration when a note appears -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- Text-to-speech engine for reading notes aloud -->
     <queries>
+        <!-- Launchable apps for the picker (instead of QUERY_ALL_PACKAGES: least privilege) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Text-to-speech engine for reading notes aloud -->
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
@@ -27,8 +29,13 @@
 
     <application
         android:name=".WakktApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        tools:targetApi="31"
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Wakkt">
 

@@ -7,3 +7,8 @@ Open this folder in Android Studio, or run `./gradlew assembleDebug`.
 
 ## Stack
 Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Coroutines/Flow.
+
+## Release
+- `./gradlew bundleRelease` builds the signed AAB for Google Play (needs `keystore.properties`, see `docs/play-store/play-console-checklist.md`).
+- `./gradlew installReleaseQa` installs the shrunk release build as "wakkt QA" next to the dev app for smoke testing.
+- Store listing, privacy policy and Play Console answers: `docs/play-store/`. Audit report: `docs/AUDIT.md`.

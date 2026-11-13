@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B5BDB"/><stop offset="1" stop-color="#2A3FA0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <g transform="translate(150 250) rotate(-8) scale(4.2) translate(-53 -54)">
+    <path d="M34,36 h42 v30 l-12,12 h-30 z" fill="#000" fill-opacity="0.25"/>
+    <path d="M32,33 h42 v30 l-12,12 h-30 z" fill="#FFD43B"/>
+    <path d="M62,75 v-12 h12 z" fill="#F2A900"/>
+    <path d="M39,43 h28 v4 h-28 z M39,52 h22 v4 h-22 z M39,61 h14 v4 h-14 z" fill="#3B5BDB"/>
+  </g>
+  <text x="400" y="225" font-family="Inter, DejaVu Sans, sans-serif" font-size="104" font-weight="800" fill="#FFFFFF">wakkt</text>
+  <text x="404" y="290" font-family="Inter, DejaVu Sans, sans-serif" font-size="30" font-weight="500" fill="#DDE4FF">A note that shows up the moment</text>
+  <text x="404" y="330" font-family="Inter, DejaVu Sans, sans-serif" font-size="30" font-weight="500" fill="#DDE4FF">you open the app you want to stop.</text>
+</svg>
