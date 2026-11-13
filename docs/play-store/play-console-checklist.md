@@ -10,7 +10,7 @@
 ## 2. App content
 | Section | Answer |
 |---|---|
-| Privacy policy | Host `privacy-policy.md` at a public URL (e.g. GitHub Pages) and paste the URL. Fill in the support email. |
+| Privacy policy | Use `https://marouanemjh.github.io/wakkt/privacy.html` (from `web/privacy.html`, deployed by the Pages workflow). |
 | Ads | No ads |
 | App access | All functionality available without login. Reviewer note: "Grant 'Display over other apps' and 'Usage access' in onboarding, add a note to any app, then open that app." |
 | Content rating | Questionnaire: utility/productivity; no violence, sexual content, gambling, user-generated content shared with others, or location sharing → expected **Everyone / PEGI 3** |
