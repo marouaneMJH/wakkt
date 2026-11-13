@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [LabelEntity::class], version = 2, exportSchema = false)
+@Database(entities = [LabelEntity::class], version = 3, exportSchema = false)
 abstract class WakktDatabase : RoomDatabase() {
     abstract fun labelDao(): LabelDao
 
@@ -17,6 +17,22 @@ abstract class WakktDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE labels ADD COLUMN style TEXT NOT NULL DEFAULT 'CLASSIC'")
                 db.execSQL("ALTER TABLE labels ADD COLUMN backdrop TEXT NOT NULL DEFAULT 'NONE'")
                 db.execSQL("ALTER TABLE labels ADD COLUMN imagePath TEXT")
+            }
+        }
+
+        /** v3: attention (sound, voice, vibration, repeat) and visual effects. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf(
+                    "sound TEXT NOT NULL DEFAULT 'NONE'",
+                    "voice INTEGER NOT NULL DEFAULT 0",
+                    "vibration TEXT NOT NULL DEFAULT 'NONE'",
+                    "repeatSeconds INTEGER NOT NULL DEFAULT 0",
+                    "motion TEXT NOT NULL DEFAULT 'NONE'",
+                    "pattern TEXT NOT NULL DEFAULT 'NONE'",
+                    "grain INTEGER NOT NULL DEFAULT 0",
+                    "glitch INTEGER NOT NULL DEFAULT 0",
+                ).forEach { db.execSQL("ALTER TABLE labels ADD COLUMN $it") }
             }
         }
     }

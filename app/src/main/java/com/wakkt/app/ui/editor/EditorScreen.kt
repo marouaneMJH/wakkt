@@ -21,6 +21,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.wakkt.app.data.Backdrop
+import com.wakkt.app.data.LabelEntity
+import com.wakkt.app.data.NoteMotion
+import com.wakkt.app.data.NotePattern
+import com.wakkt.app.data.NoteSound
+import com.wakkt.app.data.NoteVibration
+import com.wakkt.app.overlay.TvStaticLayer
+import androidx.compose.material.icons.rounded.PlayArrow
 import com.wakkt.app.data.NoteColor
 import com.wakkt.app.data.NoteStyle
 import com.wakkt.app.overlay.StickyNote
@@ -205,6 +212,8 @@ fun EditorScreen(
             }
 
             LookSection(state, viewModel)
+            AttentionSection(state, viewModel)
+            EffectsSection(state, viewModel)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.editor_preview), style = MaterialTheme.typography.titleSmall)
@@ -410,6 +419,7 @@ private fun NotePreview(state: EditorState) {
                 Box(Modifier.height(56.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bar.copy(alpha = 0.6f)))
             }
         }
+        if (hasBackdrop && state.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
         if (hasBackdrop) {
             Box(
                 Modifier
@@ -434,6 +444,7 @@ private fun NotePreview(state: EditorState) {
                 style = state.style,
                 imagePath = state.imagePath,
                 maxWidth = 240.dp,
+                effects = state.effects,
             )
             if (hasBackdrop && state.behavior == LabelBehavior.STICKY) {
                 FilledTonalButton(onClick = {}) { Text(stringResource(R.string.overlay_continue)) }
@@ -472,3 +483,167 @@ private fun backdropName(b: Backdrop): String = stringResource(
         Backdrop.FULL -> R.string.editor_backdrop_full
     },
 )
+
+@Composable
+private fun AttentionSection(state: EditorState, viewModel: EditorViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.editor_attention),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedButton(onClick = viewModel::testAlerts, enabled = state.hasAlerts) {
+                Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.editor_test))
+            }
+        }
+        ChoiceRow(
+            title = stringResource(R.string.editor_sound),
+            options = NoteSound.entries,
+            selected = state.sound,
+            label = {
+                stringResource(
+                    when (it) {
+                        NoteSound.NONE -> R.string.editor_sound_none
+                        NoteSound.CHIME -> R.string.editor_sound_chime
+                        NoteSound.BEEP -> R.string.editor_sound_beep
+                        NoteSound.BUZZ -> R.string.editor_sound_buzz
+                        NoteSound.ALARM -> R.string.editor_sound_alarm
+                    },
+                )
+            },
+            onSelect = viewModel::onSoundChange,
+        )
+        SwitchRow(
+            title = stringResource(R.string.editor_voice),
+            description = stringResource(R.string.editor_voice_desc),
+            checked = state.voice,
+            onChange = viewModel::onVoiceChange,
+        )
+        ChoiceRow(
+            title = stringResource(R.string.editor_vibration),
+            options = NoteVibration.entries,
+            selected = state.vibration,
+            label = {
+                stringResource(
+                    when (it) {
+                        NoteVibration.NONE -> R.string.editor_vibration_none
+                        NoteVibration.TAP -> R.string.editor_vibration_tap
+                        NoteVibration.DOUBLE -> R.string.editor_vibration_double
+                        NoteVibration.LONG -> R.string.editor_vibration_long
+                    },
+                )
+            },
+            onSelect = viewModel::onVibrationChange,
+        )
+        if (state.hasAlerts) {
+            ChoiceRow(
+                title = stringResource(R.string.editor_repeat),
+                options = LabelEntity.REPEAT_PRESETS,
+                selected = state.repeatSeconds,
+                label = {
+                    when (it) {
+                        0 -> stringResource(R.string.editor_repeat_once)
+                        60 -> stringResource(R.string.editor_repeat_minute)
+                        else -> stringResource(R.string.editor_repeat_seconds, it)
+                    }
+                },
+                onSelect = viewModel::onRepeatChange,
+            )
+            Text(
+                stringResource(R.string.editor_attention_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EffectsSection(state: EditorState, viewModel: EditorViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(stringResource(R.string.editor_effects), style = MaterialTheme.typography.titleMedium)
+        ChoiceRow(
+            title = stringResource(R.string.editor_motion),
+            options = NoteMotion.entries,
+            selected = state.motion,
+            label = {
+                stringResource(
+                    when (it) {
+                        NoteMotion.NONE -> R.string.editor_motion_none
+                        NoteMotion.PULSE -> R.string.editor_motion_pulse
+                        NoteMotion.SHAKE -> R.string.editor_motion_shake
+                        NoteMotion.BOUNCE -> R.string.editor_motion_bounce
+                        NoteMotion.FLASH -> R.string.editor_motion_flash
+                    },
+                )
+            },
+            onSelect = viewModel::onMotionChange,
+        )
+        ChoiceRow(
+            title = stringResource(R.string.editor_pattern),
+            options = NotePattern.entries,
+            selected = state.pattern,
+            label = {
+                stringResource(
+                    when (it) {
+                        NotePattern.NONE -> R.string.editor_pattern_none
+                        NotePattern.STRIPES -> R.string.editor_pattern_stripes
+                        NotePattern.DOTS -> R.string.editor_pattern_dots
+                        NotePattern.GRID -> R.string.editor_pattern_grid
+                        NotePattern.ZIGZAG -> R.string.editor_pattern_zigzag
+                    },
+                )
+            },
+            onSelect = viewModel::onPatternChange,
+        )
+        SwitchRow(
+            title = stringResource(R.string.editor_grain),
+            description = stringResource(R.string.editor_grain_desc),
+            checked = state.grain,
+            onChange = viewModel::onGrainChange,
+        )
+        SwitchRow(
+            title = stringResource(R.string.editor_glitch),
+            description = stringResource(R.string.editor_glitch_desc),
+            checked = state.glitch,
+            onChange = viewModel::onGlitchChange,
+        )
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ChoiceRow(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { option ->
+                FilterChip(
+                    selected = option == selected,
+                    onClick = { onSelect(option) },
+                    label = { Text(label(option)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}

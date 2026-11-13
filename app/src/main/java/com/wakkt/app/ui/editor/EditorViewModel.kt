@@ -13,6 +13,12 @@ import com.wakkt.app.data.LabelRules
 import com.wakkt.app.data.NoteColor
 import com.wakkt.app.data.NoteImageStore
 import com.wakkt.app.data.NoteStyle
+import com.wakkt.app.data.NoteEffects
+import com.wakkt.app.data.NoteMotion
+import com.wakkt.app.data.NotePattern
+import com.wakkt.app.data.NoteSound
+import com.wakkt.app.data.NoteVibration
+import com.wakkt.app.alerts.NoteAlerter
 import com.wakkt.app.ui.applist.InstalledAppsSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -37,11 +43,21 @@ data class EditorState(
     val style: NoteStyle = NoteStyle.CLASSIC,
     val backdrop: Backdrop = Backdrop.NONE,
     val imagePath: String? = null,
+    val sound: NoteSound = NoteSound.NONE,
+    val voice: Boolean = false,
+    val vibration: NoteVibration = NoteVibration.NONE,
+    val repeatSeconds: Int = 0,
+    val motion: NoteMotion = NoteMotion.NONE,
+    val pattern: NotePattern = NotePattern.NONE,
+    val grain: Boolean = false,
+    val glitch: Boolean = false,
     val importingImage: Boolean = false,
     val imageError: Boolean = false,
     val finished: Boolean = false,
 ) {
     val canSave: Boolean get() = text.isNotBlank()
+    val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
+    val effects: NoteEffects get() = NoteEffects(motion, pattern, grain, glitch)
 }
 
 @HiltViewModel
@@ -50,6 +66,7 @@ class EditorViewModel @Inject constructor(
     private val repository: LabelRepository,
     private val apps: InstalledAppsSource,
     private val images: NoteImageStore,
+    private val alerter: NoteAlerter,
 ) : ViewModel() {
     private val packageName: String = checkNotNull(savedStateHandle["packageName"])
 
@@ -79,6 +96,14 @@ class EditorViewModel @Inject constructor(
                 style = label?.style ?: NoteStyle.CLASSIC,
                 backdrop = label?.backdrop ?: Backdrop.NONE,
                 imagePath = label?.imagePath,
+                sound = label?.sound ?: NoteSound.NONE,
+                voice = label?.voice ?: false,
+                vibration = label?.vibration ?: NoteVibration.NONE,
+                repeatSeconds = label?.repeatSeconds ?: 0,
+                motion = label?.motion ?: NoteMotion.NONE,
+                pattern = label?.pattern ?: NotePattern.NONE,
+                grain = label?.grain ?: false,
+                glitch = label?.glitch ?: false,
             )
         }
     }
@@ -91,6 +116,40 @@ class EditorViewModel @Inject constructor(
     fun onStyleChange(value: NoteStyle) = _state.update { it.copy(style = value) }
     fun onBackdropChange(value: Backdrop) = _state.update { it.copy(backdrop = value) }
     fun onRemoveImage() = _state.update { it.copy(imagePath = null) }
+    fun onSoundChange(value: NoteSound) = _state.update { it.copy(sound = value) }
+    fun onVoiceChange(value: Boolean) = _state.update { it.copy(voice = value) }
+    fun onVibrationChange(value: NoteVibration) = _state.update { it.copy(vibration = value) }
+    fun onRepeatChange(seconds: Int) = _state.update { it.copy(repeatSeconds = seconds) }
+    fun onMotionChange(value: NoteMotion) = _state.update { it.copy(motion = value) }
+    fun onPatternChange(value: NotePattern) = _state.update { it.copy(pattern = value) }
+    fun onGrainChange(value: Boolean) = _state.update { it.copy(grain = value) }
+    fun onGlitchChange(value: Boolean) = _state.update { it.copy(glitch = value) }
+
+    /** Plays the current sound, voice and vibration once. */
+    fun testAlerts() {
+        val s = _state.value
+        alerter.test(draft(s).copy(text = s.text.trim()))
+    }
+
+    private fun draft(s: EditorState) = LabelEntity(
+        packageName = packageName,
+        text = s.text.trim(),
+        behavior = s.behavior,
+        snoozeMinutes = if (s.snoozeMinutes in LabelRules.PERIOD_PRESETS) s.snoozeMinutes else 60,
+        enabled = s.enabled,
+        color = s.color,
+        style = s.style,
+        backdrop = s.backdrop,
+        imagePath = s.imagePath,
+        sound = s.sound,
+        voice = s.voice,
+        vibration = s.vibration,
+        repeatSeconds = if (s.repeatSeconds in LabelEntity.REPEAT_PRESETS) s.repeatSeconds else 0,
+        motion = s.motion,
+        pattern = s.pattern,
+        grain = s.grain,
+        glitch = s.glitch,
+    )
 
     fun onImagePicked(uri: Uri?) {
         if (uri == null) return
@@ -110,22 +169,12 @@ class EditorViewModel @Inject constructor(
         if (!s.canSave) return
         viewModelScope.launch {
             val old = original
-            val minutes = if (s.snoozeMinutes in LabelRules.PERIOD_PRESETS) s.snoozeMinutes else 60
             val unchanged = old != null && old.behavior == s.behavior
             repository.save(
-                LabelEntity(
-                    packageName = packageName,
-                    text = s.text.trim(),
-                    behavior = s.behavior,
-                    snoozeMinutes = minutes,
+                draft(s).copy(
                     // Keep snooze/dismiss progress unless the behavior changed.
                     snoozedUntil = if (unchanged) old!!.snoozedUntil else 0L,
                     dismissedForever = if (unchanged) old!!.dismissedForever else false,
-                    enabled = s.enabled,
-                    color = s.color,
-                    style = s.style,
-                    backdrop = s.backdrop,
-                    imagePath = s.imagePath,
                 ),
             )
             saved = true
@@ -149,6 +198,7 @@ class EditorViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        alerter.stop()
         // Leaving without saving: discard images imported in this session.
         if (!saved && importedImages.isNotEmpty()) {
             importedImages.forEach(images::deleteNow)

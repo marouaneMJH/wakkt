@@ -13,6 +13,15 @@
     <!-- Keep the monitoring service alive -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Optional vibration when a note appears -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Text-to-speech engine for reading notes aloud -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 

@@ -40,6 +40,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.wakkt.app.R
+import com.wakkt.app.alerts.NoteAlerter
 import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.data.LabelEntity
@@ -81,6 +82,7 @@ private class OverlayLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner, V
 @Singleton
 class WindowOverlayController @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val alerter: NoteAlerter,
 ) : OverlayController {
 
     private enum class Mode { COMPACT, BACKDROP }
@@ -102,16 +104,20 @@ class WindowOverlayController @Inject constructor(
 
     override fun show(label: LabelEntity, onClose: () -> Unit) {
         if (!Settings.canDrawOverlays(context)) return
-        if (label.packageName != visitPackage) {
+        val newVisit = label.packageName != visitPackage
+        if (newVisit) {
             visitPackage = label.packageName
             continued = false
         }
         this.label = label
         this.onClose = onClose
         render()
+        // Sounds/vibration play once per visit (and repeat if configured), not on every label update.
+        if (newVisit && view != null) alerter.start(label)
     }
 
     override fun hide() {
+        alerter.stop()
         removeView()
         visitPackage = null
         continued = false
@@ -120,6 +126,7 @@ class WindowOverlayController @Inject constructor(
 
     private fun continueToApp() {
         continued = true
+        alerter.stop()
         render()
     }
 
@@ -193,6 +200,7 @@ class WindowOverlayController @Inject constructor(
             color = l.color,
             style = l.style,
             imagePath = l.imagePath,
+            effects = l.effects,
             modifier = Modifier.pointerInput(Unit) {
                 detectDragGestures { change, drag ->
                     change.consume()
@@ -210,14 +218,13 @@ class WindowOverlayController @Inject constructor(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background.copy(alpha = alpha))
                 // Swallow taps so they don't reach the hidden app.
-                .pointerInput(Unit) { detectTapGestures { } }
-                .systemBarsPadding()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center,
+                .pointerInput(Unit) { detectTapGestures { } },
         ) {
+            if (l.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
             Column(
+                Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             ) {
                 StickyNote(
                     text = l.text,
@@ -227,6 +234,7 @@ class WindowOverlayController @Inject constructor(
                     style = l.style,
                     imagePath = l.imagePath,
                     maxWidth = 320.dp,
+                    effects = l.effects,
                 )
                 if (l.behavior == LabelBehavior.STICKY) {
                     FilledTonalButton(onClick = ::continueToApp) {
