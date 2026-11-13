@@ -122,4 +122,8 @@
     <string name="editor_glitch_desc">The note jitters and flickers every few seconds.</string>
     <string name="editor_shuffle">Shuffle</string>
     <string name="editor_chaos_hint">Every time the app opens, the note gets new random visuals that change every few seconds. No strobing.</string>
+    <string name="overlay_close">Close note</string>
+    <string name="editor_hidden_forever">Closed forever. It won\'t show again.</string>
+    <string name="editor_hidden_until">Hidden until %1$s</string>
+    <string name="editor_show_again">Show again</string>
 </resources>

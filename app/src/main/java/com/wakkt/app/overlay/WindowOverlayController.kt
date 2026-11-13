@@ -283,8 +283,12 @@ class WindowOverlayController @Inject constructor(
         val density = res.displayMetrics.density
         val screenW = res.displayMetrics.widthPixels
         val noteW = (280 * density).toInt().coerceAtMost(screenW)
-        val resId = res.getIdentifier("status_bar_height", "dimen", "android")
-        val statusBar = if (resId > 0) res.getDimensionPixelSize(resId) else (24 * density).toInt()
+        val statusBar = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            windowManager.currentWindowMetrics.windowInsets
+                .getInsets(android.view.WindowInsets.Type.statusBars()).top
+        } else {
+            (24 * density).toInt()
+        }
         return ((screenW - noteW) / 2).coerceAtLeast(0) to statusBar + (8 * density).toInt()
     }
 

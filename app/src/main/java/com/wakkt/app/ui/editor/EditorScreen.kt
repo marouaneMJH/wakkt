@@ -36,6 +36,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -224,6 +225,29 @@ fun EditorScreen(
                         modifier = Modifier.weight(1f),
                     )
                     Switch(checked = state.enabled, onCheckedChange = viewModel::onEnabledChange)
+                }
+                val now = System.currentTimeMillis()
+                val hidden = !state.resetDismissal && state.enabled &&
+                    (state.dismissedForever || state.snoozedUntil > now)
+                if (hidden) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (state.dismissedForever) stringResource(R.string.editor_hidden_forever)
+                                else stringResource(
+                                    R.string.editor_hidden_until,
+                                    android.text.format.DateFormat.getTimeFormat(LocalContext.current).format(java.util.Date(state.snoozedUntil)),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = viewModel::onShowAgain) { Text(stringResource(R.string.editor_show_again)) }
+                        }
+                    }
                 }
             }
 

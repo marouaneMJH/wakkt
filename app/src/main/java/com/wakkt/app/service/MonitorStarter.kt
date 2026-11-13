@@ -25,8 +25,15 @@ object MonitorStarter {
 
     fun canRun(context: Context): Boolean = hasOverlayPermission(context) && hasUsageAccess(context)
 
-    fun start(context: Context) {
+    /** Returns false if the system refused to start the service (e.g. background start limits). */
+    fun start(context: Context): Boolean = try {
         ContextCompat.startForegroundService(context, Intent(context, LabelMonitorService::class.java))
+        true
+    } catch (e: IllegalStateException) {
+        // ForegroundServiceStartNotAllowedException (API 31+) extends IllegalStateException.
+        false
+    } catch (e: SecurityException) {
+        false
     }
 
     fun stop(context: Context) {

@@ -47,7 +47,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wakkt.app.R
 import com.wakkt.app.data.NoteEffects
+import androidx.compose.ui.res.stringResource
 import com.wakkt.app.data.NoteImageStore
 import com.wakkt.app.data.NoteMotion
 import com.wakkt.app.data.NoteStyle
@@ -195,7 +197,7 @@ internal fun StickyNoteContent(
                         if (closable) {
                             Spacer(Modifier.width(4.dp))
                             IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
-                                Icon(Icons.Filled.Close, contentDescription = "Close", modifier = Modifier.size(16.dp))
+                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.overlay_close), modifier = Modifier.size(16.dp))
                             }
                         }
                     }

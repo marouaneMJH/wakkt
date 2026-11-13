@@ -37,6 +37,10 @@ data class EditorState(
     val behavior: LabelBehavior = LabelBehavior.CLOSABLE_PERIOD,
     val snoozeMinutes: Int = 60,
     val enabled: Boolean = true,
+    /** Dismissal state of the saved label, shown so the user can bring the note back. */
+    val dismissedForever: Boolean = false,
+    val snoozedUntil: Long = 0L,
+    val resetDismissal: Boolean = false,
     val style: NoteStyle = NoteStyle.CLASSIC,
     val backdrop: Backdrop = Backdrop.NONE,
     val imagePath: String? = null,
@@ -89,6 +93,8 @@ class EditorViewModel @Inject constructor(
                 behavior = label?.behavior ?: LabelBehavior.CLOSABLE_PERIOD,
                 snoozeMinutes = label?.snoozeMinutes ?: 60,
                 enabled = label?.enabled ?: true,
+                dismissedForever = label?.dismissedForever ?: false,
+                snoozedUntil = label?.snoozedUntil ?: 0L,
                 style = label?.style ?: NoteStyle.CLASSIC,
                 backdrop = label?.backdrop ?: Backdrop.NONE,
                 imagePath = label?.imagePath,
@@ -108,6 +114,7 @@ class EditorViewModel @Inject constructor(
     fun onBehaviorChange(value: LabelBehavior) = _state.update { it.copy(behavior = value) }
     fun onPeriodChange(minutes: Int) = _state.update { it.copy(snoozeMinutes = minutes) }
     fun onEnabledChange(value: Boolean) = _state.update { it.copy(enabled = value) }
+    fun onShowAgain() = _state.update { it.copy(resetDismissal = true) }
     fun onStyleChange(value: NoteStyle) = _state.update { it.copy(style = value) }
     fun onBackdropChange(value: Backdrop) = _state.update { it.copy(backdrop = value) }
     fun onRemoveImage() = _state.update { it.copy(imagePath = null) }
@@ -163,12 +170,13 @@ class EditorViewModel @Inject constructor(
         if (!s.canSave) return
         viewModelScope.launch {
             val old = original
-            val unchanged = old != null && old.behavior == s.behavior
+            // Keep snooze/dismiss progress unless the behavior changed, the user asked to show it
+            // again, or re-enabled the label (PRD: "unless the user turns it back on inside wakkt").
+            val keep = old != null && old.behavior == s.behavior && !s.resetDismissal && !(!old.enabled && s.enabled)
             repository.save(
                 draft(s).copy(
-                    // Keep snooze/dismiss progress unless the behavior changed.
-                    snoozedUntil = if (unchanged) old!!.snoozedUntil else 0L,
-                    dismissedForever = if (unchanged) old!!.dismissedForever else false,
+                    snoozedUntil = if (keep) old!!.snoozedUntil else 0L,
+                    dismissedForever = if (keep) old!!.dismissedForever else false,
                 ),
             )
             saved = true
