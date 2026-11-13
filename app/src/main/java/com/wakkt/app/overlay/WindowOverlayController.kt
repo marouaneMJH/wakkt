@@ -16,11 +16,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +36,6 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.wakkt.app.R
 import com.wakkt.app.alerts.NoteAlerter
 import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelBehavior
@@ -76,8 +72,7 @@ private class OverlayLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner, V
  * Two window modes:
  * - COMPACT: small draggable note, the app underneath stays usable.
  * - BACKDROP: full-screen layer that blurs/dims (or fully covers) the app, note centered.
- *   It goes away when the note is closed; for STICKY labels a "Continue" button switches to COMPACT
- *   for the rest of the visit so the user is never locked out of the app.
+ *   It goes away when the note is closed; for STICKY labels it stays until the user leaves the app.
  */
 @Singleton
 class WindowOverlayController @Inject constructor(
@@ -96,19 +91,15 @@ class WindowOverlayController @Inject constructor(
 
     private var label by mutableStateOf<LabelEntity?>(null)
     private var onClose: () -> Unit = {}
-    /** Package of the current visit, and whether the user chose "Continue" during it. */
+    /** Package of the current visit. */
     private var visitPackage: String? = null
-    private var continued = false
 
     override val isShowing: Boolean get() = view != null
 
     override fun show(label: LabelEntity, onClose: () -> Unit) {
         if (!Settings.canDrawOverlays(context)) return
         val newVisit = label.packageName != visitPackage
-        if (newVisit) {
-            visitPackage = label.packageName
-            continued = false
-        }
+        if (newVisit) visitPackage = label.packageName
         this.label = label
         this.onClose = onClose
         render()
@@ -120,19 +111,12 @@ class WindowOverlayController @Inject constructor(
         alerter.stop()
         removeView()
         visitPackage = null
-        continued = false
         label = null
-    }
-
-    private fun continueToApp() {
-        continued = true
-        alerter.stop()
-        render()
     }
 
     private fun render() {
         val l = label ?: return
-        val desired = if (l.backdrop != Backdrop.NONE && !continued) Mode.BACKDROP else Mode.COMPACT
+        val desired = if (l.backdrop != Backdrop.NONE) Mode.BACKDROP else Mode.COMPACT
         if (view != null && mode == desired) return // state change recomposes in place
         removeView()
         try {
@@ -236,11 +220,6 @@ class WindowOverlayController @Inject constructor(
                     maxWidth = 320.dp,
                     effects = l.effects,
                 )
-                if (l.behavior == LabelBehavior.STICKY) {
-                    FilledTonalButton(onClick = ::continueToApp) {
-                        Text(stringResource(R.string.overlay_continue))
-                    }
-                }
             }
         }
     }

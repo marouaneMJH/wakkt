@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.semantics.Role
@@ -446,9 +445,6 @@ private fun NotePreview(state: EditorState) {
                 maxWidth = 240.dp,
                 effects = state.effects,
             )
-            if (hasBackdrop && state.behavior == LabelBehavior.STICKY) {
-                FilledTonalButton(onClick = {}) { Text(stringResource(R.string.overlay_continue)) }
-            }
         }
     }
 }
