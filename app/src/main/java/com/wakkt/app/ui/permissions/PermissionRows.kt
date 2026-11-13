@@ -1,8 +1,8 @@
 package com.wakkt.app.ui.permissions
 
+import androidx.core.net.toUri
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,7 +54,7 @@ private fun readStatus(context: Context) = PermissionStatus(
 )
 
 fun Context.openOverlaySettings() = startSafely(
-    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")),
+    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri()),
 )
 
 fun Context.openUsageAccessSettings() = startSafely(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
