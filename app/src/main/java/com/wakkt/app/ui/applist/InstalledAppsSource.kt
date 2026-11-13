@@ -17,6 +17,8 @@ data class InstalledApp(
     val packageName: String,
     val name: String,
     val icon: ImageBitmap?,
+    /** False when a note exists for an app that has since been uninstalled. */
+    val installed: Boolean = true,
 )
 
 /** Loads launchable apps (excluding ourselves). Icons are cached by package. */

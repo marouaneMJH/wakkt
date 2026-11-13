@@ -14,7 +14,7 @@ import dagger.hilt.components.SingletonComponent
 object MonitorModule {
     @Provides
     fun provideMonitorControl(@ApplicationContext context: Context): MonitorControl = object : MonitorControl {
-        override fun start() = MonitorStarter.start(context)
+        override fun start() { MonitorStarter.start(context) }
         override fun stop() = MonitorStarter.stop(context)
     }
 }

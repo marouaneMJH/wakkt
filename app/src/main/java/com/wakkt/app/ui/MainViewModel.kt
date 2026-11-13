@@ -29,7 +29,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val ready = settings.onboardingDone.first() && PermissionChecks.allGranted(context)
             if (ready && settings.labelsEnabled.first()) monitor.start()
-            _startDestination.value = if (ready) Routes.APP_LIST else Routes.ONBOARDING
+            _startDestination.value = if (ready) Routes.HOME else Routes.ONBOARDING
         }
     }
 }

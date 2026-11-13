@@ -17,7 +17,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): WakktDatabase =
-        Room.databaseBuilder(context, WakktDatabase::class.java, "wakkt.db").build()
+        Room.databaseBuilder(context, WakktDatabase::class.java, "wakkt.db")
+            .addMigrations(WakktDatabase.MIGRATION_1_2, WakktDatabase.MIGRATION_2_3, WakktDatabase.MIGRATION_3_4, WakktDatabase.MIGRATION_4_5)
+            .build()
 
     @Provides
     fun provideLabelDao(db: WakktDatabase): LabelDao = db.labelDao()
