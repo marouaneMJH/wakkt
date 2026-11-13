@@ -35,4 +35,16 @@ data class NoteEffects(
     val motion: NoteMotion = NoteMotion.NONE,
     val grain: Boolean = false,
     val glitch: Boolean = false,
-)
+) {
+    companion object {
+        /**
+         * Effects are not chosen by the user: every appearance rolls its own. There is always some
+         * motion; TV static and glitch each show up about half the time.
+         */
+        fun random(seed: Long): NoteEffects {
+            val r = kotlin.random.Random(seed xor 0x2545F4914F6CDD1DL)
+            val motions = NoteMotion.entries.filter { it != NoteMotion.NONE }
+            return NoteEffects(motion = motions[r.nextInt(motions.size)], grain = r.nextBoolean(), glitch = r.nextBoolean())
+        }
+    }
+}

@@ -12,8 +12,6 @@ import com.wakkt.app.data.LabelRepository
 import com.wakkt.app.data.LabelRules
 import com.wakkt.app.data.NoteImageStore
 import com.wakkt.app.data.NoteStyle
-import com.wakkt.app.data.NoteEffects
-import com.wakkt.app.data.NoteMotion
 import com.wakkt.app.data.NoteSound
 import com.wakkt.app.data.NoteVibration
 import com.wakkt.app.alerts.NoteAlerter
@@ -49,16 +47,13 @@ data class EditorState(
     val vibration: NoteVibration = NoteVibration.NONE,
     val repeatSeconds: Int = 0,
     val loud: Boolean = false,
-    val motion: NoteMotion = NoteMotion.NONE,
-    val grain: Boolean = false,
-    val glitch: Boolean = false,
+    val allowContinue: Boolean = false,
     val importingImage: Boolean = false,
     val imageError: Boolean = false,
     val finished: Boolean = false,
 ) {
     val canSave: Boolean get() = text.isNotBlank()
     val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
-    val effects: NoteEffects get() = NoteEffects(motion, grain, glitch)
 }
 
 @HiltViewModel
@@ -103,9 +98,7 @@ class EditorViewModel @Inject constructor(
                 vibration = label?.vibration ?: NoteVibration.NONE,
                 repeatSeconds = label?.repeatSeconds ?: 0,
                 loud = label?.loud ?: false,
-                motion = label?.motion ?: NoteMotion.NONE,
-                grain = label?.grain ?: false,
-                glitch = label?.glitch ?: false,
+                allowContinue = label?.allowContinue ?: false,
             )
         }
     }
@@ -123,9 +116,7 @@ class EditorViewModel @Inject constructor(
     fun onVibrationChange(value: NoteVibration) = _state.update { it.copy(vibration = value) }
     fun onRepeatChange(seconds: Int) = _state.update { it.copy(repeatSeconds = seconds) }
     fun onLoudChange(value: Boolean) = _state.update { it.copy(loud = value) }
-    fun onMotionChange(value: NoteMotion) = _state.update { it.copy(motion = value) }
-    fun onGrainChange(value: Boolean) = _state.update { it.copy(grain = value) }
-    fun onGlitchChange(value: Boolean) = _state.update { it.copy(glitch = value) }
+    fun onAllowContinueChange(value: Boolean) = _state.update { it.copy(allowContinue = value) }
 
     /** Plays the current sound, voice and vibration once. */
     fun testAlerts() {
@@ -147,9 +138,7 @@ class EditorViewModel @Inject constructor(
         vibration = s.vibration,
         repeatSeconds = if (s.repeatSeconds in LabelEntity.REPEAT_PRESETS) s.repeatSeconds else 0,
         loud = s.loud,
-        motion = s.motion,
-        grain = s.grain,
-        glitch = s.glitch,
+        allowContinue = s.allowContinue,
     )
 
     fun onImagePicked(uri: Uri?) {

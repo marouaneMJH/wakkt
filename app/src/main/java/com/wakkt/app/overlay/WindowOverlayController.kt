@@ -35,7 +35,12 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.wakkt.app.R
 import com.wakkt.app.alerts.NoteAlerter
+import com.wakkt.app.data.NoteEffects
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.data.LabelEntity
@@ -71,7 +76,8 @@ private class OverlayLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner, V
  * Two window modes:
  * - COMPACT: small draggable note, the app underneath stays usable.
  * - BACKDROP: full-screen layer that blurs/dims (or fully covers) the app, note centered.
- *   It goes away when the note is closed; for STICKY labels it stays until the user leaves the app.
+ *   It goes away when the note is closed. If the label allows it, "Continue to app" lifts the cover
+ *   and switches to COMPACT for the rest of the visit: the app becomes usable, the note stays.
  */
 @Singleton
 class WindowOverlayController @Inject constructor(
@@ -93,6 +99,10 @@ class WindowOverlayController @Inject constructor(
     /** Package of the current visit, and the random seed of its chaos visuals. */
     private var visitPackage: String? = null
     private var chaosSeed by mutableStateOf(0L)
+    /** Random motion / static / glitch for this visit. */
+    private var effects by mutableStateOf(NoteEffects())
+    /** The user tapped "Continue to app" during this visit. */
+    private var continued = false
 
     override val isShowing: Boolean get() = view != null
 
@@ -102,6 +112,8 @@ class WindowOverlayController @Inject constructor(
         if (newVisit) {
             visitPackage = label.packageName
             chaosSeed = System.nanoTime() // new random scene every time the app is opened
+            effects = NoteEffects.random(chaosSeed)
+            continued = false
         }
         this.label = label
         this.onClose = onClose
@@ -114,12 +126,19 @@ class WindowOverlayController @Inject constructor(
         alerter.stop()
         removeView()
         visitPackage = null
+        continued = false
         label = null
+    }
+
+    /** Lifts the cover; the note stays as a small draggable note and alerts keep going. */
+    private fun continueToApp() {
+        continued = true
+        render()
     }
 
     private fun render() {
         val l = label ?: return
-        val desired = if (l.backdrop != Backdrop.NONE) Mode.BACKDROP else Mode.COMPACT
+        val desired = if (l.backdrop != Backdrop.NONE && !continued) Mode.BACKDROP else Mode.COMPACT
         if (view != null && mode == desired) return // state change recomposes in place
         removeView()
         try {
@@ -186,7 +205,7 @@ class WindowOverlayController @Inject constructor(
             onClose = { onClose() },
             style = l.style,
             imagePath = l.imagePath,
-            effects = l.effects,
+            effects = effects,
             chaosSeed = chaosSeed,
             modifier = Modifier.pointerInput(Unit) {
                 detectDragGestures { change, drag ->
@@ -208,7 +227,7 @@ class WindowOverlayController @Inject constructor(
         ) {
             // The hidden app is covered by chaos instead of a calm tint.
             ChaosCanvas(chaosSeed + 1, Modifier.matchParentSize().graphicsLayer { this.alpha = alpha })
-            if (l.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
+            if (effects.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -221,9 +240,14 @@ class WindowOverlayController @Inject constructor(
                     style = l.style,
                     imagePath = l.imagePath,
                     maxWidth = 320.dp,
-                    effects = l.effects,
+                    effects = effects,
                     chaosSeed = chaosSeed,
                 )
+                if (l.allowContinue) {
+                    FilledTonalButton(onClick = ::continueToApp) {
+                        Text(stringResource(R.string.overlay_continue))
+                    }
+                }
             }
         }
     }

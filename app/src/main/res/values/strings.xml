@@ -109,19 +109,8 @@
     <string name="editor_repeat_minute">Every 1 min</string>
     <string name="editor_test">Test</string>
     <string name="editor_attention_hint">Sounds follow your notification volume and silent mode.</string>
-    <string name="editor_effects">Effects</string>
-    <string name="editor_motion">Motion</string>
-    <string name="editor_motion_none">None</string>
-    <string name="editor_motion_pulse">Pulse</string>
-    <string name="editor_motion_shake">Shake</string>
-    <string name="editor_motion_bounce">Bounce</string>
-    <string name="editor_motion_flash">Flash</string>
-    <string name="editor_grain">TV static</string>
-    <string name="editor_grain_desc">Animated grain over the note and background.</string>
-    <string name="editor_glitch">Glitch</string>
-    <string name="editor_glitch_desc">The note jitters and flickers every few seconds.</string>
     <string name="editor_shuffle">Shuffle</string>
-    <string name="editor_chaos_hint">Every time the app opens, the note gets new random visuals that change every few seconds. No strobing.</string>
+    <string name="editor_chaos_hint">Every time the app opens, the note gets new random visuals, motion, glitches and TV static. No strobing.</string>
     <string name="overlay_close">Close note</string>
     <string name="editor_hidden_forever">Closed forever. It won\'t show again.</string>
     <string name="editor_hidden_until">Hidden until %1$s</string>
@@ -131,4 +120,8 @@
     <string name="home_empty_title">No notes yet</string>
     <string name="home_empty_body">Tap Add note, pick an app, and write what you want to see when you open it.</string>
     <string name="home_not_installed">App not installed</string>
+    <string name="overlay_continue">Continue to app</string>
+    <string name="editor_allow_continue">Let me continue to the app</string>
+    <string name="editor_allow_continue_desc">Adds a \"Continue to app\" button. The cover lifts, the note stays on screen.</string>
+    <string name="editor_backdrop_hint_continue">Covers the app until you close the note or tap \"Continue to app\".</string>
 </resources>

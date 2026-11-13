@@ -21,7 +21,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelEntity
-import com.wakkt.app.data.NoteMotion
+import com.wakkt.app.data.NoteEffects
+import androidx.compose.material3.FilledTonalButton
 import com.wakkt.app.data.NoteSound
 import com.wakkt.app.data.NoteVibration
 import com.wakkt.app.overlay.TvStaticLayer
@@ -253,7 +254,6 @@ fun EditorScreen(
 
             LookSection(state, viewModel)
             AttentionSection(state, viewModel)
-            EffectsSection(state, viewModel)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 var seed by remember { mutableLongStateOf(System.nanoTime()) }
@@ -429,11 +429,20 @@ private fun LookSection(state: EditorState, viewModel: EditorViewModel) {
             if (state.backdrop != Backdrop.NONE) {
                 Text(
                     stringResource(
-                        if (state.behavior == LabelBehavior.STICKY) R.string.editor_backdrop_hint_sticky
-                        else R.string.editor_backdrop_hint,
+                        when {
+                            state.allowContinue -> R.string.editor_backdrop_hint_continue
+                            state.behavior == LabelBehavior.STICKY -> R.string.editor_backdrop_hint_sticky
+                            else -> R.string.editor_backdrop_hint
+                        },
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SwitchRow(
+                    title = stringResource(R.string.editor_allow_continue),
+                    description = stringResource(R.string.editor_allow_continue_desc),
+                    checked = state.allowContinue,
+                    onChange = viewModel::onAllowContinueChange,
                 )
             }
         }
@@ -472,6 +481,7 @@ private fun LookSection(state: EditorState, viewModel: EditorViewModel) {
 /** The note over a mock app screen, showing how the backdrop will look. */
 @Composable
 private fun NotePreview(state: EditorState, seed: Long) {
+    val effects = remember(seed) { NoteEffects.random(seed) }
     val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val hasBackdrop = state.backdrop != Backdrop.NONE
     val text = state.text.ifBlank { stringResource(R.string.editor_preview_placeholder) }
@@ -501,7 +511,7 @@ private fun NotePreview(state: EditorState, seed: Long) {
         if (hasBackdrop) {
             val alpha = WindowOverlayController.scrimAlpha(state.backdrop, blurSupported)
             ChaosCanvas(seed + 1, Modifier.matchParentSize().graphicsLayer { this.alpha = alpha })
-            if (state.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
+            if (effects.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
         }
         Column(
             Modifier.fillMaxSize().padding(8.dp),
@@ -515,9 +525,12 @@ private fun NotePreview(state: EditorState, seed: Long) {
                 style = state.style,
                 imagePath = state.imagePath,
                 maxWidth = 240.dp,
-                effects = state.effects,
+                effects = effects,
                 chaosSeed = seed,
             )
+            if (hasBackdrop && state.allowContinue) {
+                FilledTonalButton(onClick = {}) { Text(stringResource(R.string.overlay_continue)) }
+            }
         }
     }
 }
@@ -625,42 +638,6 @@ private fun AttentionSection(state: EditorState, viewModel: EditorViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Composable
-private fun EffectsSection(state: EditorState, viewModel: EditorViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(R.string.editor_effects), style = MaterialTheme.typography.titleMedium)
-        ChoiceRow(
-            title = stringResource(R.string.editor_motion),
-            options = NoteMotion.entries,
-            selected = state.motion,
-            label = {
-                stringResource(
-                    when (it) {
-                        NoteMotion.NONE -> R.string.editor_motion_none
-                        NoteMotion.PULSE -> R.string.editor_motion_pulse
-                        NoteMotion.SHAKE -> R.string.editor_motion_shake
-                        NoteMotion.BOUNCE -> R.string.editor_motion_bounce
-                        NoteMotion.FLASH -> R.string.editor_motion_flash
-                    },
-                )
-            },
-            onSelect = viewModel::onMotionChange,
-        )
-        SwitchRow(
-            title = stringResource(R.string.editor_grain),
-            description = stringResource(R.string.editor_grain_desc),
-            checked = state.grain,
-            onChange = viewModel::onGrainChange,
-        )
-        SwitchRow(
-            title = stringResource(R.string.editor_glitch),
-            description = stringResource(R.string.editor_glitch_desc),
-            checked = state.glitch,
-            onChange = viewModel::onGlitchChange,
-        )
     }
 }
 

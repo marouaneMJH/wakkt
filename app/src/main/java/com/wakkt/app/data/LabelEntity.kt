@@ -27,13 +27,14 @@ data class LabelEntity(
     @ColumnInfo(defaultValue = "0") val repeatSeconds: Int = 0,
     /** Play sound and voice at alarm volume, even when the phone is on silent (v4). */
     @ColumnInfo(defaultValue = "0") val loud: Boolean = false,
-    // Visual effects (v3).
+    // Legacy (v3): effects are now random per appearance (NoteEffects.random); columns kept.
     @ColumnInfo(defaultValue = "NONE") val motion: NoteMotion = NoteMotion.NONE,
     @ColumnInfo(defaultValue = "NONE") val pattern: NotePattern = NotePattern.NONE,
     @ColumnInfo(defaultValue = "0") val grain: Boolean = false,
     @ColumnInfo(defaultValue = "0") val glitch: Boolean = false,
+    /** With a backdrop: show "Continue to app", which lifts the cover but keeps the note (v5). */
+    @ColumnInfo(defaultValue = "0") val allowContinue: Boolean = false,
 ) {
-    val effects: NoteEffects get() = NoteEffects(motion, grain, glitch)
     val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
 
     companion object {
