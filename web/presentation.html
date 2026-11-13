@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wakkt – presentation</title>
+<meta name="description" content="A 10-slide presentation of wakkt, the open-source sticky note for the apps you want to use less.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/deck.css">
+<script src="assets/site.js"></script>
+<script src="assets/deck.js"></script>
+</head>
+<body class="deck">
+<main class="deck-stage" aria-roledescription="carousel" aria-label="wakkt presentation">
+<section class="slide cover" aria-roledescription="slide" aria-label="1 of 10">
+<img class="logo" src="assets/icon.svg" alt="">
+<h1>wakkt</h1>
+<p>A sticky note that shows up the moment you open<br>the app you want to use less.</p>
+<div class="foot">Free · Open source (GPL-3.0) · Android · marouaneMJH</div>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="2 of 10">
+<div class="kicker">The problem</div>
+<h2>We open apps on autopilot.</h2>
+<ul><li>Thumb goes to Instagram before the brain decides.</li>
+<li>Screen-time reports arrive <strong>after</strong> the damage is done.</li>
+<li>App blockers are all-or-nothing, so people turn them off.</li></ul>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="3 of 10">
+<div class="kicker">The idea</div>
+<h2>Interrupt the habit at the exact moment.</h2>
+<div class="big-note">Do you really need this right now?</div>
+<p>Your own words, on top of the app, the second it opens. No lecture, no lockout, just a pause you wrote for yourself.</p>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="4 of 10">
+<div class="kicker">How it works</div>
+<h2>Three steps, fifteen seconds.</h2>
+<div class="cols" style="--n:3">
+<div class="tile"><h3>1. Pick an app</h3><p>Tap “Add note”, search, tap.</p></div>
+<div class="tile"><h3>2. Write the note</h3><p>Good defaults. Nothing else is required.</p></div>
+<div class="tile"><h3>3. Open the app</h3><p>The note appears on top, instantly.</p></div></div>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="5 of 10">
+<div class="kicker">One choice</div>
+<h2>How hard should it push?</h2>
+<div class="cols" style="--n:4">
+<div class="tile"><h3>Quiet</h3><p>Silent note, back in 1 h.</p></div>
+<div class="tile"><h3>Gentle</h3><p>Chime, back in 15 min. Default.</p></div>
+<div class="tile"><h3>Firm</h3><p>Covers 80%, beep, “Continue to app”.</p></div>
+<div class="tile"><h3>Brutal</h3><p>Sticky, full cover, alarm, repeats.</p></div></div>
+<p style="margin-top:28px">Every detail stays adjustable under “Customize”.</p>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="6 of 10">
+<div class="kicker">Impossible to ignore</div>
+<h2>Designed so you never get used to it.</h2>
+<ul><li><strong>Random visuals</strong> every opening: clashing colors, crawling patterns, glitches, TV static.</li>
+<li><strong>Hide the app</strong> behind the note at 50%, 80% or completely.</li>
+<li><strong>Sounds and voice</strong>: from a chime to a siren; the note read aloud; vibration; repeat.</li>
+<li><strong>Safe by design</strong>: no strobing, capped at 2.5 changes per second (tested).</li></ul>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="7 of 10">
+<div class="kicker">Privacy</div>
+<h2>Private by design, not by promise.</h2>
+<ul><li><strong>No internet permission</strong>: the app cannot send data anywhere.</li>
+<li>No account, ads, analytics or trackers.</li>
+<li>Data stays in private storage, excluded from cloud backups.</li>
+<li>Open source, so anyone can verify it.</li></ul>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="8 of 10">
+<div class="kicker">Under the hood</div>
+<h2>Modern, small, native.</h2>
+<div class="cols" style="--n:2">
+<div class="tile"><h3>App</h3><p>Kotlin · Jetpack Compose · Material 3 · Hilt · Room · DataStore · Coroutines/Flow</p></div>
+<div class="tile"><h3>Platform</h3><p>Usage access to detect the app · overlay window to draw the note · foreground service</p></div>
+<div class="tile"><h3>Media</h3><p>Sounds synthesized in code · visuals generated from a random seed</p></div>
+<div class="tile"><h3>Quality</h3><p>Unit-tested rules and safety caps · R8-shrunk release · Android 8 to 16</p></div></div>
+</section>
+<section class="slide " aria-roledescription="slide" aria-label="9 of 10">
+<div class="kicker">Open source</div>
+<h2>Free software under the GPL-3.0.</h2>
+<ul><li>Build it yourself with one command, audit every line.</li>
+<li>Contributions welcome: bugs, ideas, translations, code.</li>
+<li>Next: Google Play release, more languages, smarter schedules.</li></ul>
+<p style="margin-top:24px"><strong>github.com/marouaneMJH/wakkt</strong></p>
+</section>
+<section class="slide cover" aria-roledescription="slide" aria-label="10 of 10">
+<img class="logo" src="assets/icon.svg" alt="">
+<h1>Thank you.</h1>
+<p>Give your future self a note.</p>
+<div class="foot">wakkt · Free and open source · GPL-3.0</div>
+</section>
+</main>
+<div class="deck-ui">
+  <a href="index.html" aria-label="Back to website">←&nbsp;Site</a>
+  <button type="button" data-prev aria-label="Previous slide">‹</button>
+  <button type="button" data-next aria-label="Next slide">›</button>
+  <div class="progress" aria-hidden="true"><i></i></div>
+  <span class="count" aria-live="polite"></span>
+  <button type="button" data-full aria-label="Fullscreen (F)">⛶</button>
+</div>
+</body>
+</html>
