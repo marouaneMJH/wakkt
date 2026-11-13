@@ -507,6 +507,8 @@ private fun AttentionSection(state: EditorState, viewModel: EditorViewModel) {
                         NoteSound.BEEP -> R.string.editor_sound_beep
                         NoteSound.BUZZ -> R.string.editor_sound_buzz
                         NoteSound.ALARM -> R.string.editor_sound_alarm
+                        NoteSound.HORN -> R.string.editor_sound_horn
+                        NoteSound.CHAOS -> R.string.editor_sound_chaos
                     },
                 )
             },
@@ -534,6 +536,14 @@ private fun AttentionSection(state: EditorState, viewModel: EditorViewModel) {
             },
             onSelect = viewModel::onVibrationChange,
         )
+        if (state.sound != NoteSound.NONE || state.voice) {
+            SwitchRow(
+                title = stringResource(R.string.editor_loud),
+                description = stringResource(R.string.editor_loud_desc),
+                checked = state.loud,
+                onChange = viewModel::onLoudChange,
+            )
+        }
         if (state.hasAlerts) {
             ChoiceRow(
                 title = stringResource(R.string.editor_repeat),
@@ -549,7 +559,7 @@ private fun AttentionSection(state: EditorState, viewModel: EditorViewModel) {
                 onSelect = viewModel::onRepeatChange,
             )
             Text(
-                stringResource(R.string.editor_attention_hint),
+                stringResource(if (state.loud) R.string.editor_attention_hint_loud else R.string.editor_attention_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -18,7 +18,7 @@ class ToneSynthTest {
             val peak = pcm.maxOf { abs(it.toInt()) }
             assertTrue("$sound too quiet: $peak", peak > Short.MAX_VALUE / 8)
             assertTrue("$sound clips", peak < Short.MAX_VALUE)
-            assertTrue("$sound too long", ToneSynth.durationMs(sound) in 200..1500)
+            assertTrue("$sound too long", ToneSynth.durationMs(sound) in 200..2000)
         }
     }
 

@@ -25,6 +25,8 @@ data class LabelEntity(
     @ColumnInfo(defaultValue = "NONE") val vibration: NoteVibration = NoteVibration.NONE,
     /** Repeat sound/voice/vibration every N seconds while the note is open; 0 = once. */
     @ColumnInfo(defaultValue = "0") val repeatSeconds: Int = 0,
+    /** Play sound and voice at alarm volume, even when the phone is on silent (v4). */
+    @ColumnInfo(defaultValue = "0") val loud: Boolean = false,
     // Visual effects (v3).
     @ColumnInfo(defaultValue = "NONE") val motion: NoteMotion = NoteMotion.NONE,
     @ColumnInfo(defaultValue = "NONE") val pattern: NotePattern = NotePattern.NONE,

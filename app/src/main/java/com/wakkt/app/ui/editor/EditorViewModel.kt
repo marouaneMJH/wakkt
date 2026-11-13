@@ -47,6 +47,7 @@ data class EditorState(
     val voice: Boolean = false,
     val vibration: NoteVibration = NoteVibration.NONE,
     val repeatSeconds: Int = 0,
+    val loud: Boolean = false,
     val motion: NoteMotion = NoteMotion.NONE,
     val pattern: NotePattern = NotePattern.NONE,
     val grain: Boolean = false,
@@ -100,6 +101,7 @@ class EditorViewModel @Inject constructor(
                 voice = label?.voice ?: false,
                 vibration = label?.vibration ?: NoteVibration.NONE,
                 repeatSeconds = label?.repeatSeconds ?: 0,
+                loud = label?.loud ?: false,
                 motion = label?.motion ?: NoteMotion.NONE,
                 pattern = label?.pattern ?: NotePattern.NONE,
                 grain = label?.grain ?: false,
@@ -120,6 +122,7 @@ class EditorViewModel @Inject constructor(
     fun onVoiceChange(value: Boolean) = _state.update { it.copy(voice = value) }
     fun onVibrationChange(value: NoteVibration) = _state.update { it.copy(vibration = value) }
     fun onRepeatChange(seconds: Int) = _state.update { it.copy(repeatSeconds = seconds) }
+    fun onLoudChange(value: Boolean) = _state.update { it.copy(loud = value) }
     fun onMotionChange(value: NoteMotion) = _state.update { it.copy(motion = value) }
     fun onPatternChange(value: NotePattern) = _state.update { it.copy(pattern = value) }
     fun onGrainChange(value: Boolean) = _state.update { it.copy(grain = value) }
@@ -145,6 +148,7 @@ class EditorViewModel @Inject constructor(
         voice = s.voice,
         vibration = s.vibration,
         repeatSeconds = if (s.repeatSeconds in LabelEntity.REPEAT_PRESETS) s.repeatSeconds else 0,
+        loud = s.loud,
         motion = s.motion,
         pattern = s.pattern,
         grain = s.grain,

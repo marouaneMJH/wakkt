@@ -19,7 +19,7 @@ enum class Backdrop(val strength: Float) {
 }
 
 /** Tone played when the note appears. Synthesized in-app (see alerts/ToneSynth.kt). */
-enum class NoteSound { NONE, CHIME, BEEP, BUZZ, ALARM }
+enum class NoteSound { NONE, CHIME, BEEP, BUZZ, ALARM, HORN, CHAOS }
 
 /** Vibration played when the note appears. */
 enum class NoteVibration { NONE, TAP, DOUBLE, LONG }

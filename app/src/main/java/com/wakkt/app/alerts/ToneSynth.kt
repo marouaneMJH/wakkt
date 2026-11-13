@@ -3,8 +3,10 @@ package com.wakkt.app.alerts
 import com.wakkt.app.data.NoteSound
 import kotlin.math.PI
 import kotlin.math.exp
+import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.random.Random
 
 /** Synthesizes the alert tones as 16-bit mono PCM, so no audio files are shipped. Pure; unit-tested. */
 object ToneSynth {
@@ -31,6 +33,23 @@ object ToneSynth {
             val f = if ((t / 0.15).toInt() % 2 == 0) 950.0 else 1350.0
             0.4 * soft(sin(2 * PI * f * t) * 1.5) * edge(t, 1.2)
         }
+        // Very noisy: clashing sawtooth horn (a dissonant minor third), pulsing, hard clipped.
+        NoteSound.HORN -> render(1.5) { t ->
+            val on = (t / 0.25).toInt() % 2 == 0
+            val w = saw(233.0, t) + saw(277.0, t) + 0.6 * saw(466.0, t)
+            if (on) LOUD * hard(w * 2.5) * edge(t % 0.25, 0.25) else 0.0
+        }
+        // Very very noisy: fast wailing siren + low square growl + white noise, hard clipped.
+        NoteSound.CHAOS -> {
+            val rnd = Random(42)
+            render(2.0) { t ->
+                val sweep = 1200 + 600 * sin(2 * PI * 7 * t)            // wobbling siren pitch
+                val siren = sin(2 * PI * sweep * t)
+                val growl = if (sin(2 * PI * 110 * t) >= 0) 1.0 else -1.0
+                val noise = rnd.nextDouble() * 2 - 1
+                LOUD * hard((siren + 0.7 * growl + 0.9 * noise) * 2.2) * edge(t, 2.0)
+            }
+        }
     }
 
     /** Duration of [sound] in milliseconds. */
@@ -42,6 +61,15 @@ object ToneSynth {
         return 0.35 * env * (sin(2 * PI * f * t) + 0.3 * sin(2 * PI * f * 2.01 * t))
     }
 
+    /** Peak level of the very noisy sounds: just under full scale. */
+    private const val LOUD = 0.97
+
+    /** Naive sawtooth in [-1, 1]: bright and buzzy on purpose. */
+    private fun saw(f: Double, t: Double): Double { val x = f * t; return 2 * (x - floor(x)) - 1 }
+
+    /** Hard clipper: squashes everything to full loudness. */
+    private fun hard(x: Double) = x.coerceIn(-1.0, 1.0)
+
     /** Soft clipper: keeps rich waveforms from clipping harshly. */
     private fun soft(x: Double) = x / (1 + kotlin.math.abs(x))
 
@@ -51,7 +79,7 @@ object ToneSynth {
         return min(1.0, min(t / f, (length - t) / f)).coerceIn(0.0, 1.0)
     }
 
-    private inline fun render(seconds: Double, wave: (Double) -> Double): ShortArray {
+    private inline fun render(seconds: Double, crossinline wave: (Double) -> Double): ShortArray {
         val n = (seconds * SAMPLE_RATE).toInt()
         return ShortArray(n) { i ->
             val v = wave(i.toDouble() / SAMPLE_RATE).coerceIn(-1.0, 1.0)

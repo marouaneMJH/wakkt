@@ -25,7 +25,8 @@ import javax.inject.Singleton
 
 /**
  * Plays a label's attention alerts: vibration, a synthesized tone, then the text read aloud.
- * Audio uses notification usage, so it follows the notification volume and silent mode.
+ * Audio uses notification usage (follows notification volume and silent mode), or alarm usage
+ * when the label is in loud mode.
  */
 @Singleton
 class NoteAlerter @Inject constructor(
@@ -39,8 +40,8 @@ class NoteAlerter @Inject constructor(
     private var ttsReady = false
     private var pendingSpeech: String? = null
 
-    private val attributes = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+    private fun attributes(loud: Boolean): AudioAttributes = AudioAttributes.Builder()
+        .setUsage(if (loud) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
 
@@ -71,19 +72,19 @@ class NoteAlerter @Inject constructor(
     private suspend fun playOnce(label: LabelEntity) {
         vibrate(label.vibration)
         if (label.sound != NoteSound.NONE) {
-            playTone(label.sound)
+            playTone(label.sound, label.loud)
             delay(ToneSynth.durationMs(label.sound) + 120)
         }
-        if (label.voice && label.text.isNotBlank()) speak(label.text)
+        if (label.voice && label.text.isNotBlank()) speak(label.text, label.loud)
     }
 
-    private fun playTone(sound: NoteSound) {
+    private fun playTone(sound: NoteSound, loud: Boolean) {
         releaseTrack()
         val pcm = toneCache.getOrPut(sound) { ToneSynth.pcm(sound) }
         if (pcm.isEmpty()) return
         runCatching {
             val t = AudioTrack.Builder()
-                .setAudioAttributes(attributes)
+                .setAudioAttributes(attributes(loud))
                 .setAudioFormat(
                     AudioFormat.Builder()
                         .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -105,19 +106,23 @@ class NoteAlerter @Inject constructor(
         track = null
     }
 
-    private fun speak(text: String) {
+    private fun speak(text: String, loud: Boolean) {
+        speechLoud = loud
         if (tts == null) {
             // Init is async; the text is spoken once the engine is ready.
             tts = TextToSpeech(context) { status ->
                 ttsReady = status == TextToSpeech.SUCCESS
                 if (ttsReady) pendingSpeech?.let(::say)
                 pendingSpeech = null
-            }.also { it.setAudioAttributes(attributes) }
+            }
         }
         if (ttsReady) say(text) else pendingSpeech = text
     }
 
+    private var speechLoud = false
+
     private fun say(text: String) {
+        tts?.setAudioAttributes(attributes(speechLoud))
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "wakkt-note")
     }
 

@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [LabelEntity::class], version = 3, exportSchema = false)
+@Database(entities = [LabelEntity::class], version = 4, exportSchema = false)
 abstract class WakktDatabase : RoomDatabase() {
     abstract fun labelDao(): LabelDao
 
@@ -33,6 +33,13 @@ abstract class WakktDatabase : RoomDatabase() {
                     "grain INTEGER NOT NULL DEFAULT 0",
                     "glitch INTEGER NOT NULL DEFAULT 0",
                 ).forEach { db.execSQL("ALTER TABLE labels ADD COLUMN $it") }
+            }
+        }
+
+        /** v4: loud mode (alarm volume). */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE labels ADD COLUMN loud INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
