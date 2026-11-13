@@ -33,7 +33,7 @@ data class LabelEntity(
     @ColumnInfo(defaultValue = "0") val grain: Boolean = false,
     @ColumnInfo(defaultValue = "0") val glitch: Boolean = false,
 ) {
-    val effects: NoteEffects get() = NoteEffects(motion, pattern, grain, glitch)
+    val effects: NoteEffects get() = NoteEffects(motion, grain, glitch)
     val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
 
     companion object {

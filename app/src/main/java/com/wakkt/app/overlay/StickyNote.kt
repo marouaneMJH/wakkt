@@ -2,7 +2,7 @@ package com.wakkt.app.overlay
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,22 +18,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -41,27 +37,29 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wakkt.app.data.NoteColor
 import com.wakkt.app.data.NoteEffects
-import com.wakkt.app.data.NoteMotion
-import com.wakkt.app.data.NotePattern
 import com.wakkt.app.data.NoteImageStore
+import com.wakkt.app.data.NoteMotion
 import com.wakkt.app.data.NoteStyle
 import com.wakkt.app.ui.theme.WakktTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.random.Random
 
 /**
- * The note shown over other apps and in the editor preview. Stateless; follows the system theme.
- * [imagePath] is a file stored by [NoteImageStore]; it is decoded off the main thread.
+ * The note shown over other apps and in the editor preview. Its paper is a [ChaosCanvas]: a new
+ * random, deliberately unpleasant scene for every [chaosSeed]. The text sits on a plate so the
+ * reminder stays readable. [imagePath] is a file stored by [NoteImageStore], decoded off the main thread.
  */
 @Composable
 fun StickyNote(
@@ -69,18 +67,30 @@ fun StickyNote(
     closable: Boolean,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    color: NoteColor = NoteColor.YELLOW,
     style: NoteStyle = NoteStyle.CLASSIC,
     imagePath: String? = null,
     maxWidth: Dp = 264.dp,
     effects: NoteEffects = NoteEffects(),
+    chaosSeed: Long = 0L,
 ) {
     var image by remember(imagePath) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(imagePath) {
         val path = imagePath ?: return@LaunchedEffect
         image = withContext(Dispatchers.IO) { NoteImageStore.load(path)?.asImageBitmap() }
     }
-    StickyNoteContent(text, closable, onClose, modifier, color, style, image, maxWidth, effects)
+    StickyNoteContent(text, closable, onClose, modifier, style, image, maxWidth, effects, chaosSeed)
+}
+
+/** Random typography and text plate for one appearance. */
+private class NoteLook(seed: Long) {
+    private val r = Random(seed xor 0x5DEECE66DL)
+    val font: FontFamily = listOf(FontFamily.SansSerif, FontFamily.Serif, FontFamily.Monospace, FontFamily.Cursive)[r.nextInt(4)]
+    val italic: Boolean = r.nextFloat() < 0.35f
+    val weight: FontWeight = listOf(FontWeight.Medium, FontWeight.Bold, FontWeight.Black)[r.nextInt(3)]
+    private val darkPlate: Boolean = r.nextBoolean()
+    val plate: Color = if (darkPlate) Color.Black.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.82f)
+    val ink: Color = if (darkPlate) Color.White else Color.Black
+    val tilt: Float = r.nextFloat() * 6f - 3f
 }
 
 @Composable
@@ -89,33 +99,28 @@ internal fun StickyNoteContent(
     closable: Boolean,
     onClose: () -> Unit,
     modifier: Modifier,
-    color: NoteColor,
     style: NoteStyle,
     image: ImageBitmap?,
     maxWidth: Dp,
     effects: NoteEffects = NoteEffects(),
+    chaosSeed: Long = 0L,
 ) {
-    val p = color.palette(isSystemInDarkTheme())
+    val look = remember(chaosSeed) { NoteLook(chaosSeed) }
     val motion = rememberMotion(effects.motion)
     val glitch = rememberGlitch(effects.glitch)
     val animated = effects.motion != NoteMotion.NONE || effects.glitch
-    val surfaceColor = MaterialTheme.colorScheme.surface
+
     val shape: Shape
-    val paper: Color
     val elevation: Dp
     val border: BorderStroke?
     when (style) {
-        NoteStyle.CLASSIC -> { shape = RoundedCornerShape(3.dp); paper = p.paper; elevation = 7.dp; border = null }
-        NoteStyle.SOFT -> { shape = RoundedCornerShape(22.dp); paper = p.paper; elevation = 10.dp; border = null }
-        NoteStyle.OUTLINE -> {
-            shape = RoundedCornerShape(14.dp); paper = lerp(surfaceColor, p.paper, 0.35f)
-            elevation = 3.dp; border = BorderStroke(1.5.dp, p.accent)
-        }
+        NoteStyle.CLASSIC -> { shape = RoundedCornerShape(3.dp); elevation = 7.dp; border = null }
+        NoteStyle.SOFT -> { shape = RoundedCornerShape(22.dp); elevation = 10.dp; border = null }
+        NoteStyle.OUTLINE -> { shape = RoundedCornerShape(14.dp); elevation = 3.dp; border = BorderStroke(3.dp, look.ink) }
     }
-    val ink = if (style == NoteStyle.OUTLINE) MaterialTheme.colorScheme.onSurface else p.ink
-    val fold = p.accent.copy(alpha = 0.35f)
-
     val flashing = effects.motion == NoteMotion.FLASH
+    val fold = look.ink.copy(alpha = 0.35f)
+
     // Outer padding leaves room for the shadow (and motion) so it is not clipped by the window.
     Box(modifier = modifier.padding(if (animated) 14.dp else 10.dp)) {
         Surface(
@@ -123,12 +128,12 @@ internal fun StickyNoteContent(
                 .graphicsLayer {
                     scaleX = motion.scale.value
                     scaleY = motion.scale.value
-                    rotationZ = motion.rotation.value + if (style == NoteStyle.CLASSIC) -1.5f else 0f
+                    rotationZ = motion.rotation.value + look.tilt
                     translationY = motion.translationY.value
                     translationX = glitch.offsetX
                 }
                 .then(if (image != null) Modifier.width(maxWidth) else Modifier.widthIn(max = maxWidth))
-                .shadow(elevation, shape, ambientColor = p.accent, spotColor = Color.Black.copy(alpha = 0.3f))
+                .shadow(elevation, shape, spotColor = Color.Black.copy(alpha = 0.4f))
                 .then(
                     if (style == NoteStyle.CLASSIC) Modifier.drawWithContent {
                         drawContent()
@@ -145,49 +150,44 @@ internal fun StickyNoteContent(
                     } else Modifier,
                 ),
             shape = shape,
-            color = paper,
-            contentColor = ink,
-            border = if (flashing) BorderStroke(3.dp, p.accent.copy(alpha = motion.flash.value)) else border,
+            color = Color.Transparent,
+            contentColor = look.ink,
+            border = if (flashing) BorderStroke(3.dp, look.ink.copy(alpha = motion.flash.value)) else border,
         ) {
-          Box(Modifier.drawWithContent { drawContent(); drawGlitch(glitch.seed) }) {
-            Column(
-                Modifier.then(
-                    if (style == NoteStyle.OUTLINE) Modifier
-                        .drawBehind { drawRect(p.accent, size = Size(5.dp.toPx(), size.height)) }
-                        .padding(start = 5.dp)
-                    else Modifier,
-                ).then(
-                    if (effects.pattern != NotePattern.NONE) Modifier.drawBehind { drawPattern(effects.pattern, ink.copy(alpha = 0.09f)) }
-                    else Modifier,
-                ),
-            ) {
+            Box(Modifier.drawWithContent { drawContent(); drawGlitch(glitch.seed) }) {
+                ChaosCanvas(chaosSeed, Modifier.matchParentSize())
+                Column(Modifier.padding(8.dp)) {
                     if (image != null) {
-                        val inset = if (style == NoteStyle.CLASSIC) 0.dp else 6.dp
                         Image(
                             bitmap = image,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .padding(start = inset, top = inset, end = inset)
+                                .padding(bottom = 8.dp)
                                 .fillMaxWidth()
                                 .heightIn(max = maxWidth * 0.62f)
-                                .clip(if (style == NoteStyle.CLASSIC) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp)),
+                                .clip(RoundedCornerShape(if (style == NoteStyle.CLASSIC) 2.dp else 14.dp)),
                         )
                     }
                     Row(
-                        modifier = Modifier.padding(
-                            start = 14.dp,
-                            end = if (closable) 4.dp else 14.dp,
-                            top = if (closable) 4.dp else 12.dp,
-                            bottom = if (closable) 4.dp else 12.dp,
-                        ),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(look.plate)
+                            .padding(
+                                start = 12.dp,
+                                end = if (closable) 2.dp else 12.dp,
+                                top = if (closable) 2.dp else 10.dp,
+                                bottom = if (closable) 2.dp else 10.dp,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = text,
-                            fontSize = if (style == NoteStyle.SOFT) 16.sp else 15.sp,
+                            fontSize = 16.sp,
                             lineHeight = 21.sp,
-                            fontWeight = if (style == NoteStyle.SOFT) FontWeight.SemiBold else FontWeight.Medium,
+                            fontFamily = look.font,
+                            fontWeight = look.weight,
+                            fontStyle = if (look.italic) FontStyle.Italic else FontStyle.Normal,
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 8,
                             modifier = Modifier.weight(1f, fill = image != null),
@@ -199,32 +199,21 @@ internal fun StickyNoteContent(
                             }
                         }
                     }
+                }
+                if (effects.grain) TvStaticLayer(alpha = 0.16f, modifier = Modifier.matchParentSize())
             }
-            if (effects.grain) TvStaticLayer(alpha = 0.16f, modifier = Modifier.matchParentSize())
-          }
         }
     }
 }
 
-@Preview(name = "Styles light", showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Preview(name = "Chaos notes", showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
-private fun StickyNoteLightPreview() {
+private fun StickyNotePreview() {
     WakktTheme(darkTheme = false) {
         Column {
-            StickyNoteContent("Check your budget first", true, {}, Modifier, NoteColor.YELLOW, NoteStyle.CLASSIC, null, 264.dp)
-            StickyNoteContent("10 minutes max", false, {}, Modifier, NoteColor.MINT, NoteStyle.SOFT, null, 264.dp)
-            StickyNoteContent("Never share your code", true, {}, Modifier, NoteColor.SKY, NoteStyle.OUTLINE, null, 264.dp)
-        }
-    }
-}
-
-@Preview(name = "Styles dark", showBackground = true, backgroundColor = 0xFF121212)
-@Composable
-private fun StickyNoteDarkPreview() {
-    WakktTheme(darkTheme = true) {
-        Column {
-            StickyNoteContent("10 minutes max", false, {}, Modifier, NoteColor.PINK, NoteStyle.CLASSIC, null, 264.dp)
-            StickyNoteContent("Breathe first", true, {}, Modifier, NoteColor.LAVENDER, NoteStyle.SOFT, null, 264.dp)
+            StickyNoteContent("Check your budget first", true, {}, Modifier, NoteStyle.CLASSIC, null, 264.dp, chaosSeed = 1)
+            StickyNoteContent("10 minutes max", false, {}, Modifier, NoteStyle.SOFT, null, 264.dp, chaosSeed = 2)
+            StickyNoteContent("Never share your code", true, {}, Modifier, NoteStyle.OUTLINE, null, 264.dp, chaosSeed = 3)
         }
     }
 }

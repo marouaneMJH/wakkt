@@ -10,12 +10,10 @@ import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.data.LabelEntity
 import com.wakkt.app.data.LabelRepository
 import com.wakkt.app.data.LabelRules
-import com.wakkt.app.data.NoteColor
 import com.wakkt.app.data.NoteImageStore
 import com.wakkt.app.data.NoteStyle
 import com.wakkt.app.data.NoteEffects
 import com.wakkt.app.data.NoteMotion
-import com.wakkt.app.data.NotePattern
 import com.wakkt.app.data.NoteSound
 import com.wakkt.app.data.NoteVibration
 import com.wakkt.app.alerts.NoteAlerter
@@ -39,7 +37,6 @@ data class EditorState(
     val behavior: LabelBehavior = LabelBehavior.CLOSABLE_PERIOD,
     val snoozeMinutes: Int = 60,
     val enabled: Boolean = true,
-    val color: NoteColor = NoteColor.YELLOW,
     val style: NoteStyle = NoteStyle.CLASSIC,
     val backdrop: Backdrop = Backdrop.NONE,
     val imagePath: String? = null,
@@ -49,7 +46,6 @@ data class EditorState(
     val repeatSeconds: Int = 0,
     val loud: Boolean = false,
     val motion: NoteMotion = NoteMotion.NONE,
-    val pattern: NotePattern = NotePattern.NONE,
     val grain: Boolean = false,
     val glitch: Boolean = false,
     val importingImage: Boolean = false,
@@ -58,7 +54,7 @@ data class EditorState(
 ) {
     val canSave: Boolean get() = text.isNotBlank()
     val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
-    val effects: NoteEffects get() = NoteEffects(motion, pattern, grain, glitch)
+    val effects: NoteEffects get() = NoteEffects(motion, grain, glitch)
 }
 
 @HiltViewModel
@@ -93,7 +89,6 @@ class EditorViewModel @Inject constructor(
                 behavior = label?.behavior ?: LabelBehavior.CLOSABLE_PERIOD,
                 snoozeMinutes = label?.snoozeMinutes ?: 60,
                 enabled = label?.enabled ?: true,
-                color = label?.color ?: NoteColor.YELLOW,
                 style = label?.style ?: NoteStyle.CLASSIC,
                 backdrop = label?.backdrop ?: Backdrop.NONE,
                 imagePath = label?.imagePath,
@@ -103,7 +98,6 @@ class EditorViewModel @Inject constructor(
                 repeatSeconds = label?.repeatSeconds ?: 0,
                 loud = label?.loud ?: false,
                 motion = label?.motion ?: NoteMotion.NONE,
-                pattern = label?.pattern ?: NotePattern.NONE,
                 grain = label?.grain ?: false,
                 glitch = label?.glitch ?: false,
             )
@@ -114,7 +108,6 @@ class EditorViewModel @Inject constructor(
     fun onBehaviorChange(value: LabelBehavior) = _state.update { it.copy(behavior = value) }
     fun onPeriodChange(minutes: Int) = _state.update { it.copy(snoozeMinutes = minutes) }
     fun onEnabledChange(value: Boolean) = _state.update { it.copy(enabled = value) }
-    fun onColorChange(value: NoteColor) = _state.update { it.copy(color = value) }
     fun onStyleChange(value: NoteStyle) = _state.update { it.copy(style = value) }
     fun onBackdropChange(value: Backdrop) = _state.update { it.copy(backdrop = value) }
     fun onRemoveImage() = _state.update { it.copy(imagePath = null) }
@@ -124,7 +117,6 @@ class EditorViewModel @Inject constructor(
     fun onRepeatChange(seconds: Int) = _state.update { it.copy(repeatSeconds = seconds) }
     fun onLoudChange(value: Boolean) = _state.update { it.copy(loud = value) }
     fun onMotionChange(value: NoteMotion) = _state.update { it.copy(motion = value) }
-    fun onPatternChange(value: NotePattern) = _state.update { it.copy(pattern = value) }
     fun onGrainChange(value: Boolean) = _state.update { it.copy(grain = value) }
     fun onGlitchChange(value: Boolean) = _state.update { it.copy(glitch = value) }
 
@@ -140,7 +132,6 @@ class EditorViewModel @Inject constructor(
         behavior = s.behavior,
         snoozeMinutes = if (s.snoozeMinutes in LabelRules.PERIOD_PRESETS) s.snoozeMinutes else 60,
         enabled = s.enabled,
-        color = s.color,
         style = s.style,
         backdrop = s.backdrop,
         imagePath = s.imagePath,
@@ -150,7 +141,6 @@ class EditorViewModel @Inject constructor(
         repeatSeconds = if (s.repeatSeconds in LabelEntity.REPEAT_PRESETS) s.repeatSeconds else 0,
         loud = s.loud,
         motion = s.motion,
-        pattern = s.pattern,
         grain = s.grain,
         glitch = s.glitch,
     )

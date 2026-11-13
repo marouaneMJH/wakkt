@@ -1,6 +1,6 @@
 package com.wakkt.app.data
 
-/** Paper color of the note. Each has a light and a dark variant (see overlay/NoteColors.kt). */
+/** Legacy: no longer shown; notes use random chaos visuals. Kept for the database column. */
 enum class NoteColor { YELLOW, PINK, MINT, SKY, LAVENDER, PEACH }
 
 /** Visual style of the note. */
@@ -27,13 +27,12 @@ enum class NoteVibration { NONE, TAP, DOUBLE, LONG }
 /** Animation of the note itself. */
 enum class NoteMotion { NONE, PULSE, SHAKE, BOUNCE, FLASH }
 
-/** Pattern printed on the note paper. */
+/** Legacy: no longer shown; notes use random chaos visuals. Kept for the database column. */
 enum class NotePattern { NONE, STRIPES, DOTS, GRID, ZIGZAG }
 
 /** Visual effects drawn by StickyNote. */
 data class NoteEffects(
     val motion: NoteMotion = NoteMotion.NONE,
-    val pattern: NotePattern = NotePattern.NONE,
     val grain: Boolean = false,
     val glitch: Boolean = false,
 )

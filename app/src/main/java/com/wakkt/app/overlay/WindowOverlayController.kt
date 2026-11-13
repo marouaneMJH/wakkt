@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +15,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,15 +90,19 @@ class WindowOverlayController @Inject constructor(
 
     private var label by mutableStateOf<LabelEntity?>(null)
     private var onClose: () -> Unit = {}
-    /** Package of the current visit. */
+    /** Package of the current visit, and the random seed of its chaos visuals. */
     private var visitPackage: String? = null
+    private var chaosSeed by mutableStateOf(0L)
 
     override val isShowing: Boolean get() = view != null
 
     override fun show(label: LabelEntity, onClose: () -> Unit) {
         if (!Settings.canDrawOverlays(context)) return
         val newVisit = label.packageName != visitPackage
-        if (newVisit) visitPackage = label.packageName
+        if (newVisit) {
+            visitPackage = label.packageName
+            chaosSeed = System.nanoTime() // new random scene every time the app is opened
+        }
         this.label = label
         this.onClose = onClose
         render()
@@ -181,10 +184,10 @@ class WindowOverlayController @Inject constructor(
             text = l.text,
             closable = l.behavior != LabelBehavior.STICKY,
             onClose = { onClose() },
-            color = l.color,
             style = l.style,
             imagePath = l.imagePath,
             effects = l.effects,
+            chaosSeed = chaosSeed,
             modifier = Modifier.pointerInput(Unit) {
                 detectDragGestures { change, drag ->
                     change.consume()
@@ -200,10 +203,11 @@ class WindowOverlayController @Inject constructor(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background.copy(alpha = alpha))
                 // Swallow taps so they don't reach the hidden app.
                 .pointerInput(Unit) { detectTapGestures { } },
         ) {
+            // The hidden app is covered by chaos instead of a calm tint.
+            ChaosCanvas(chaosSeed + 1, Modifier.matchParentSize().graphicsLayer { this.alpha = alpha })
             if (l.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
@@ -214,11 +218,11 @@ class WindowOverlayController @Inject constructor(
                     text = l.text,
                     closable = l.behavior != LabelBehavior.STICKY,
                     onClose = { onClose() },
-                    color = l.color,
                     style = l.style,
                     imagePath = l.imagePath,
                     maxWidth = 320.dp,
                     effects = l.effects,
+                    chaosSeed = chaosSeed,
                 )
             }
         }

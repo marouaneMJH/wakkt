@@ -22,16 +22,17 @@ import androidx.compose.ui.semantics.semantics
 import com.wakkt.app.data.Backdrop
 import com.wakkt.app.data.LabelEntity
 import com.wakkt.app.data.NoteMotion
-import com.wakkt.app.data.NotePattern
 import com.wakkt.app.data.NoteSound
 import com.wakkt.app.data.NoteVibration
 import com.wakkt.app.overlay.TvStaticLayer
 import androidx.compose.material.icons.rounded.PlayArrow
-import com.wakkt.app.data.NoteColor
 import com.wakkt.app.data.NoteStyle
 import com.wakkt.app.overlay.StickyNote
 import com.wakkt.app.overlay.WindowOverlayController
-import com.wakkt.app.overlay.palette
+import com.wakkt.app.overlay.ChaosCanvas
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -215,8 +216,25 @@ fun EditorScreen(
             EffectsSection(state, viewModel)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.editor_preview), style = MaterialTheme.typography.titleSmall)
-                NotePreview(state)
+                var seed by remember { mutableLongStateOf(System.nanoTime()) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.editor_preview),
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { seed = System.nanoTime() }) {
+                        Icon(Icons.Rounded.Shuffle, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.editor_shuffle))
+                    }
+                }
+                NotePreview(state, seed)
+                Text(
+                    stringResource(R.string.editor_chaos_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -291,35 +309,6 @@ private fun LookSection(state: EditorState, viewModel: EditorViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.editor_look), style = MaterialTheme.typography.titleMedium)
 
-        // Color
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.editor_color), style = MaterialTheme.typography.titleSmall)
-            val dark = isSystemInDarkTheme()
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                NoteColor.entries.forEach { c ->
-                    val p = c.palette(dark)
-                    val selected = state.color == c
-                    val name = colorName(c)
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(p.paper)
-                            .border(
-                                if (selected) 2.5.dp else 1.dp,
-                                if (selected) MaterialTheme.colorScheme.primary else p.accent.copy(alpha = 0.6f),
-                                CircleShape,
-                            )
-                            .selectable(selected = selected, role = Role.RadioButton) { viewModel.onColorChange(c) }
-                            .semantics { contentDescription = name },
-                    ) {
-                        if (selected) Icon(Icons.Rounded.Check, null, tint = p.ink, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-        }
-
         // Style
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.editor_style), style = MaterialTheme.typography.titleSmall)
@@ -391,7 +380,7 @@ private fun LookSection(state: EditorState, viewModel: EditorViewModel) {
 
 /** The note over a mock app screen, showing how the backdrop will look. */
 @Composable
-private fun NotePreview(state: EditorState) {
+private fun NotePreview(state: EditorState, seed: Long) {
     val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val hasBackdrop = state.backdrop != Backdrop.NONE
     val text = state.text.ifBlank { stringResource(R.string.editor_preview_placeholder) }
@@ -418,17 +407,10 @@ private fun NotePreview(state: EditorState) {
                 Box(Modifier.height(56.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(bar.copy(alpha = 0.6f)))
             }
         }
-        if (hasBackdrop && state.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
         if (hasBackdrop) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        MaterialTheme.colorScheme.background.copy(
-                            alpha = WindowOverlayController.scrimAlpha(state.backdrop, blurSupported),
-                        ),
-                    ),
-            )
+            val alpha = WindowOverlayController.scrimAlpha(state.backdrop, blurSupported)
+            ChaosCanvas(seed + 1, Modifier.matchParentSize().graphicsLayer { this.alpha = alpha })
+            if (state.grain) TvStaticLayer(alpha = 0.22f, modifier = Modifier.matchParentSize())
         }
         Column(
             Modifier.fillMaxSize().padding(8.dp),
@@ -439,27 +421,15 @@ private fun NotePreview(state: EditorState) {
                 text = text,
                 closable = state.behavior != LabelBehavior.STICKY,
                 onClose = {},
-                color = state.color,
                 style = state.style,
                 imagePath = state.imagePath,
                 maxWidth = 240.dp,
                 effects = state.effects,
+                chaosSeed = seed,
             )
         }
     }
 }
-
-@Composable
-private fun colorName(c: NoteColor): String = stringResource(
-    when (c) {
-        NoteColor.YELLOW -> R.string.editor_color_yellow
-        NoteColor.PINK -> R.string.editor_color_pink
-        NoteColor.MINT -> R.string.editor_color_mint
-        NoteColor.SKY -> R.string.editor_color_sky
-        NoteColor.LAVENDER -> R.string.editor_color_lavender
-        NoteColor.PEACH -> R.string.editor_color_peach
-    },
-)
 
 @Composable
 private fun styleName(s: NoteStyle): String = stringResource(
@@ -587,23 +557,6 @@ private fun EffectsSection(state: EditorState, viewModel: EditorViewModel) {
                 )
             },
             onSelect = viewModel::onMotionChange,
-        )
-        ChoiceRow(
-            title = stringResource(R.string.editor_pattern),
-            options = NotePattern.entries,
-            selected = state.pattern,
-            label = {
-                stringResource(
-                    when (it) {
-                        NotePattern.NONE -> R.string.editor_pattern_none
-                        NotePattern.STRIPES -> R.string.editor_pattern_stripes
-                        NotePattern.DOTS -> R.string.editor_pattern_dots
-                        NotePattern.GRID -> R.string.editor_pattern_grid
-                        NotePattern.ZIGZAG -> R.string.editor_pattern_zigzag
-                    },
-                )
-            },
-            onSelect = viewModel::onPatternChange,
         )
         SwitchRow(
             title = stringResource(R.string.editor_grain),

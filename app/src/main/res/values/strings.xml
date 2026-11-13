@@ -61,13 +61,6 @@
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
     <string name="editor_look">Look</string>
-    <string name="editor_color">Color</string>
-    <string name="editor_color_yellow">Yellow</string>
-    <string name="editor_color_pink">Pink</string>
-    <string name="editor_color_mint">Mint</string>
-    <string name="editor_color_sky">Sky</string>
-    <string name="editor_color_lavender">Lavender</string>
-    <string name="editor_color_peach">Peach</string>
     <string name="editor_style">Style</string>
     <string name="editor_style_classic">Classic</string>
     <string name="editor_style_soft">Soft</string>
@@ -116,14 +109,10 @@
     <string name="editor_motion_shake">Shake</string>
     <string name="editor_motion_bounce">Bounce</string>
     <string name="editor_motion_flash">Flash</string>
-    <string name="editor_pattern">Pattern</string>
-    <string name="editor_pattern_none">Plain</string>
-    <string name="editor_pattern_stripes">Stripes</string>
-    <string name="editor_pattern_dots">Dots</string>
-    <string name="editor_pattern_grid">Grid</string>
-    <string name="editor_pattern_zigzag">Zigzag</string>
     <string name="editor_grain">TV static</string>
     <string name="editor_grain_desc">Animated grain over the note and background.</string>
     <string name="editor_glitch">Glitch</string>
     <string name="editor_glitch_desc">The note jitters and flickers every few seconds.</string>
+    <string name="editor_shuffle">Shuffle</string>
+    <string name="editor_chaos_hint">Every time the app opens, the note gets new random visuals that change every few seconds. No strobing.</string>
 </resources>

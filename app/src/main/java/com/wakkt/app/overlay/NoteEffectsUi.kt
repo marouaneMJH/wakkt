@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.wakkt.app.data.NoteMotion
-import com.wakkt.app.data.NotePattern
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -85,55 +84,6 @@ fun rememberMotion(motion: NoteMotion): MotionValues {
             t.animateFloat(0.1f, 1f, infiniteRepeatable(tween(450), RepeatMode.Reverse), "flash"),
         )
         NoteMotion.NONE -> error("handled above")
-    }
-}
-
-/** Draws [pattern] over the whole draw area in [color] (use a faint ink color). */
-fun DrawScope.drawPattern(pattern: NotePattern, color: Color) {
-    val u = 1.dp.toPx()
-    when (pattern) {
-        NotePattern.NONE -> Unit
-        NotePattern.STRIPES -> {
-            val step = 14 * u
-            var x = -size.height
-            while (x < size.width) {
-                drawLine(color, Offset(x, size.height), Offset(x + size.height, 0f), 3 * u)
-                x += step
-            }
-        }
-        NotePattern.DOTS -> {
-            val step = 12 * u
-            var y = step / 2
-            var row = 0
-            while (y < size.height) {
-                var x = if (row % 2 == 0) step / 2 else step
-                while (x < size.width) { drawCircle(color, 1.6f * u, Offset(x, y)); x += step }
-                y += step; row++
-            }
-        }
-        NotePattern.GRID -> {
-            val step = 16 * u
-            var x = step
-            while (x < size.width) { drawLine(color, Offset(x, 0f), Offset(x, size.height), u); x += step }
-            var y = step
-            while (y < size.height) { drawLine(color, Offset(0f, y), Offset(size.width, y), u); y += step }
-        }
-        NotePattern.ZIGZAG -> {
-            val rowStep = 14 * u
-            val half = 6 * u
-            val amp = 3.5f * u
-            var y = rowStep / 2
-            while (y < size.height + amp) {
-                val path = Path().apply {
-                    moveTo(0f, y)
-                    var x = 0f
-                    var up = true
-                    while (x < size.width) { x += half; lineTo(x, if (up) y - amp else y + amp); up = !up }
-                }
-                drawPath(path, color, style = Stroke(1.5f * u))
-                y += rowStep
-            }
-        }
     }
 }
 
