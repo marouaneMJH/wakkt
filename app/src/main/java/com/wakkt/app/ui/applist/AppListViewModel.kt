@@ -32,13 +32,12 @@ class AppListViewModel @Inject constructor(
     val state: StateFlow<AppListState> = combine(apps, labels.observeAll(), query) { apps, labels, q ->
         if (apps == null) return@combine AppListState(loading = true, query = q)
         val byPkg = labels.associateBy { it.packageName }
+        // Picker for a new note: apps that already have one live on the home screen.
         val rows = apps
+            .filter { it.packageName !in byPkg }
             .filter { q.isBlank() || it.name.contains(q.trim(), ignoreCase = true) }
-            .map { AppRow(it, byPkg[it.packageName]) }
-            .sortedWith(
-                compareBy<AppRow> { it.label == null }
-                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.app.name },
-            )
+            .map { AppRow(it, null) }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.app.name })
         AppListState(loading = false, query = q, rows = rows)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppListState())
 

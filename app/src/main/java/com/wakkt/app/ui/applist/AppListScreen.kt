@@ -17,7 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,7 +45,7 @@ import com.wakkt.app.R
 @Composable
 fun AppListScreen(
     onOpenEditor: (String) -> Unit,
-    onOpenSettings: () -> Unit,
+    onBack: () -> Unit,
     viewModel: AppListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -54,9 +54,9 @@ fun AppListScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.applist_title)) },
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Rounded.Settings, stringResource(R.string.applist_settings))
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.editor_back))
                     }
                 },
             )
@@ -107,15 +107,7 @@ private fun AppItem(row: AppRow, onClick: () -> Unit) {
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val icon = row.app.icon
-        if (icon != null) {
-            Image(icon, null, Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
-        } else {
-            Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            )
-        }
+        AppIcon(row.app.icon)
         Column(Modifier.weight(1f).padding(start = 16.dp)) {
             Text(
                 row.app.name,
@@ -135,5 +127,18 @@ private fun AppItem(row: AppRow, onClick: () -> Unit) {
                 )
             }
         }
+    }
+}
+
+/** App icon at list size, with a neutral placeholder when the icon can't be loaded. */
+@Composable
+fun AppIcon(icon: androidx.compose.ui.graphics.ImageBitmap?, modifier: Modifier = Modifier) {
+    if (icon != null) {
+        Image(icon, null, modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
+    } else {
+        Box(
+            modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        )
     }
 }

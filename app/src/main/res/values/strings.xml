@@ -17,7 +17,7 @@
     <string name="onboarding_continue">Continue</string>
 
     <!-- App list -->
-    <string name="applist_title">Apps</string>
+    <string name="applist_title">Choose an app</string>
     <string name="applist_settings">Settings</string>
     <string name="applist_search">Search apps</string>
     <string name="applist_clear">Clear search</string>
@@ -126,4 +126,9 @@
     <string name="editor_hidden_forever">Closed forever. It won\'t show again.</string>
     <string name="editor_hidden_until">Hidden until %1$s</string>
     <string name="editor_show_again">Show again</string>
+    <string name="home_title">wakkt</string>
+    <string name="home_add">Add note</string>
+    <string name="home_empty_title">No notes yet</string>
+    <string name="home_empty_body">Tap Add note, pick an app, and write what you want to see when you open it.</string>
+    <string name="home_not_installed">App not installed</string>
 </resources>
