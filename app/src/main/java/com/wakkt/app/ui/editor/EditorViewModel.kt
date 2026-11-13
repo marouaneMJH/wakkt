@@ -54,6 +54,24 @@ data class EditorState(
 ) {
     val canSave: Boolean get() = text.isNotBlank()
     val hasAlerts: Boolean get() = sound != NoteSound.NONE || voice || vibration != NoteVibration.NONE
+
+    val intensitySettings: IntensitySettings
+        get() = IntensitySettings(behavior, snoozeMinutes, backdrop, allowContinue, sound, voice, vibration, loud, repeatSeconds)
+
+    /** The preset the current fields match, or null when they were customized. */
+    val intensity: NoteIntensity? get() = NoteIntensity.detect(intensitySettings)
+
+    fun withSettings(s: IntensitySettings) = copy(
+        behavior = s.behavior,
+        snoozeMinutes = s.snoozeMinutes,
+        backdrop = s.backdrop,
+        allowContinue = s.allowContinue,
+        sound = s.sound,
+        voice = s.voice,
+        vibration = s.vibration,
+        loud = s.loud,
+        repeatSeconds = s.repeatSeconds,
+    )
 }
 
 @HiltViewModel
@@ -79,30 +97,30 @@ class EditorViewModel @Inject constructor(
             val app = apps.get(packageName)
             val label = repository.get(packageName)
             original = label
-            _state.value = EditorState(
+            val base = EditorState(
                 loaded = true,
                 appName = app?.name ?: packageName,
                 icon = app?.icon,
-                exists = label != null,
-                text = label?.text.orEmpty(),
-                behavior = label?.behavior ?: LabelBehavior.CLOSABLE_PERIOD,
-                snoozeMinutes = label?.snoozeMinutes ?: 60,
-                enabled = label?.enabled ?: true,
-                dismissedForever = label?.dismissedForever ?: false,
-                snoozedUntil = label?.snoozedUntil ?: 0L,
-                style = label?.style ?: NoteStyle.CLASSIC,
-                backdrop = label?.backdrop ?: Backdrop.NONE,
-                imagePath = label?.imagePath,
-                sound = label?.sound ?: NoteSound.NONE,
-                voice = label?.voice ?: false,
-                vibration = label?.vibration ?: NoteVibration.NONE,
-                repeatSeconds = label?.repeatSeconds ?: 0,
-                loud = label?.loud ?: false,
-                allowContinue = label?.allowContinue ?: false,
             )
+            _state.value = if (label == null) {
+                // A new note is useful with zero extra taps: start from the default preset.
+                base.withSettings(NoteIntensity.DEFAULT.applyTo(base.intensitySettings))
+            } else {
+                base.copy(
+                    exists = true,
+                    text = label.text,
+                    enabled = label.enabled,
+                    dismissedForever = label.dismissedForever,
+                    snoozedUntil = label.snoozedUntil,
+                    style = label.style,
+                    imagePath = label.imagePath,
+                ).withSettings(IntensitySettings.of(label))
+            }
         }
     }
 
+    fun onIntensityChange(value: NoteIntensity) =
+        _state.update { it.withSettings(value.applyTo(it.intensitySettings)) }
     fun onTextChange(value: String) = _state.update { it.copy(text = value.take(MAX_LABEL_LENGTH)) }
     fun onBehaviorChange(value: LabelBehavior) = _state.update { it.copy(behavior = value) }
     fun onPeriodChange(minutes: Int) = _state.update { it.copy(snoozeMinutes = minutes) }

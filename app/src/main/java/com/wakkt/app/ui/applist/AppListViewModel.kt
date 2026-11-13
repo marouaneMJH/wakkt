@@ -19,6 +19,8 @@ data class AppListState(
     val loading: Boolean = true,
     val query: String = "",
     val rows: List<AppRow> = emptyList(),
+    /** Some installed apps are left out because they already have a note. */
+    val hasHiddenApps: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,7 +40,7 @@ class AppListViewModel @Inject constructor(
             .filter { q.isBlank() || it.name.contains(q.trim(), ignoreCase = true) }
             .map { AppRow(it, null) }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.app.name })
-        AppListState(loading = false, query = q, rows = rows)
+        AppListState(loading = false, query = q, rows = rows, hasHiddenApps = apps.any { it.packageName in byPkg })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppListState())
 
     init {

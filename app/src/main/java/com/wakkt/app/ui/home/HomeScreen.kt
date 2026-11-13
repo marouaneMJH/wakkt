@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,9 @@ import com.wakkt.app.R
 import com.wakkt.app.data.LabelBehavior
 import com.wakkt.app.ui.applist.AppIcon
 import com.wakkt.app.ui.applist.AppRow
+import com.wakkt.app.ui.editor.IntensitySettings
+import com.wakkt.app.ui.editor.NoteIntensity
+import com.wakkt.app.ui.editor.title
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,8 +130,9 @@ private fun NoteCard(row: AppRow, onClick: () -> Unit, onEnabledChange: (Boolean
                 Text(
                     when {
                         !row.app.installed -> stringResource(R.string.home_not_installed)
+                        // The intensity preset reads best; customized notes fall back to the behavior.
                         else -> stringResource(
-                            when (label.behavior) {
+                            NoteIntensity.detect(IntensitySettings.of(label))?.title ?: when (label.behavior) {
                                 LabelBehavior.STICKY -> R.string.editor_behavior_sticky
                                 LabelBehavior.CLOSABLE_PERIOD -> R.string.editor_behavior_period
                                 LabelBehavior.CLOSABLE_FOREVER -> R.string.editor_behavior_forever
@@ -147,7 +152,7 @@ private fun NoteCard(row: AppRow, onClick: () -> Unit, onEnabledChange: (Boolean
 @Composable
 private fun EmptyState(onAdd: () -> Unit, modifier: Modifier) {
     Column(
-        modifier.padding(32.dp).clickable(onClick = onAdd),
+        modifier.padding(32.dp).clickable(role = Role.Button, onClick = onAdd),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

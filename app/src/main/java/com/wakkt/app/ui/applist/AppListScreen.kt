@@ -30,6 +30,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +57,9 @@ fun AppListScreen(
     viewModel: AppListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Typing a few letters is faster than scrolling a long list: start in the search field.
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -76,16 +87,29 @@ fun AppListScreen(
                         }
                     }
                 },
+                // Search key opens the app when exactly one matches.
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = { state.rows.singleOrNull()?.let { onOpenEditor(it.app.packageName) } },
+                ),
                 shape = RoundedCornerShape(28.dp),
                 colors = TextFieldDefaults.colors(),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .focusRequester(searchFocus),
             )
             when {
                 state.loading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-                state.rows.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                state.rows.isEmpty() -> Box(Modifier.fillMaxSize().padding(32.dp), Alignment.Center) {
                     Text(
-                        stringResource(R.string.applist_empty),
+                        when {
+                            state.query.isNotBlank() -> stringResource(R.string.applist_no_match, state.query.trim())
+                            state.hasHiddenApps -> stringResource(R.string.applist_all_have_notes)
+                            else -> stringResource(R.string.applist_empty)
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
                     )
                 }
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {

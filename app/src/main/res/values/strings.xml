@@ -24,7 +24,6 @@
     <string name="applist_empty">No apps found</string>
 
     <!-- Editor -->
-    <string name="editor_title">Label</string>
     <string name="editor_back">Back</string>
     <string name="editor_text_label">Note</string>
     <string name="editor_behavior">Behavior</string>
@@ -67,7 +66,6 @@
     <string name="settings_permissions">Permissions</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
-    <string name="editor_look">Look</string>
     <string name="editor_style">Style</string>
     <string name="editor_style_classic">Classic</string>
     <string name="editor_style_soft">Soft</string>
@@ -84,7 +82,6 @@
     <string name="editor_image_change">Change</string>
     <string name="editor_image_remove">Remove</string>
     <string name="editor_image_error">Couldn\'t open that image.</string>
-    <string name="editor_attention">Attention</string>
     <string name="editor_sound">Sound</string>
     <string name="editor_sound_none">Off</string>
     <string name="editor_sound_chime">Chime</string>
@@ -124,4 +121,37 @@
     <string name="editor_allow_continue">Let me continue to the app</string>
     <string name="editor_allow_continue_desc">Adds a \"Continue to app\" button. The cover lifts, the note stays on screen.</string>
     <string name="editor_backdrop_hint_continue">Covers the app until you close the note or tap \"Continue to app\".</string>
+    <!-- Editor: simple path -->
+    <string name="editor_title_new">New note</string>
+    <string name="editor_title_edit">Edit note</string>
+    <string name="editor_text_placeholder">e.g. Do you really need this right now?</string>
+    <string name="editor_preview_cd">Preview of your note: %1$s</string>
+    <string name="editor_enabled_desc">Turn off to pause this note without deleting it.</string>
+    <string name="editor_intensity">How hard should it push?</string>
+    <string name="editor_intensity_custom">Custom</string>
+    <string name="editor_intensity_custom_hint">You changed the details below. Pick a level to start from it again.</string>
+    <string name="editor_intensity_quiet">Quiet</string>
+    <string name="editor_intensity_quiet_desc">Silent note. Close it, back in 1 h.</string>
+    <string name="editor_intensity_gentle">Gentle</string>
+    <string name="editor_intensity_gentle_desc">Soft chime. Close it, back in 15 min.</string>
+    <string name="editor_intensity_firm">Firm</string>
+    <string name="editor_intensity_firm_desc">Hides most of the app. Beep and buzz. Back in 5 min.</string>
+    <string name="editor_intensity_brutal">Brutal</string>
+    <string name="editor_intensity_brutal_desc">Hides the whole app. Can\'t be closed. Loud, repeats.</string>
+
+    <!-- Editor: Customize -->
+    <string name="editor_customize">Customize</string>
+    <string name="editor_expanded">Expanded</string>
+    <string name="editor_collapsed">Collapsed</string>
+    <string name="editor_summary_sticky">Can\'t be closed</string>
+    <string name="editor_summary_period">Back in %1$s</string>
+    <string name="editor_summary_forever">Closes for good</string>
+    <string name="editor_summary_cover_half">Hides 50%</string>
+    <string name="editor_summary_cover_strong">Hides 80%</string>
+    <string name="editor_summary_cover_full">Hides the app</string>
+    <string name="editor_summary_voice">Reads aloud</string>
+    <string name="editor_summary_vibration">Vibrates</string>
+    <string name="editor_summary_silent">Silent</string>
+    <string name="applist_no_match">No apps match \"%1$s\"</string>
+    <string name="applist_all_have_notes">Every app already has a note. Edit them from the home screen.</string>
 </resources>
