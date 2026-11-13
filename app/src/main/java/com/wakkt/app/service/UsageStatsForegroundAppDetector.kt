@@ -40,7 +40,8 @@ class UsageStatsForegroundAppDetector @Inject constructor(
                     @Suppress("DEPRECATION")
                     if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
                         val pkg = event.packageName
-                        if (pkg != null && pkg != context.packageName) latest = pkg
+                        // wakkt itself is emitted too, so opening wakkt hides any note.
+                        if (pkg != null) latest = pkg
                     }
                 }
                 // Overlap slightly so events at the boundary are not missed.
